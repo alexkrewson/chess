@@ -103,9 +103,56 @@ if node.down
 puts "node.down.coordinates #{node.down.coordinates}"
 end
 
+white_king = "\u265A"
+white_queen = "\u265B"
+white_rook = "\u265C"
+white_bishop = "\u265D"
+white_knight = "\u265E"
+white_pawn = "\u265F"
 
+black_king = "\u2654"
+black_queen = "\u2655"
+black_rook = "\u2656"
+black_bishop = "\u2657"
+black_knight = "\u2658"
+black_pawn = "\u2659"
+# puts white_king.encode('utf-8')
 
+puts "_________________________________________________"
+puts ""
+puts "|  #{black_rook.encode('utf-8')}  |  #{black_knight.encode('utf-8')}  |  #{black_bishop.encode('utf-8')}  |  #{black_queen.encode('utf-8')}  |  #{black_king.encode('utf-8')}   |  #{black_bishop.encode('utf-8')}  |  #{black_knight.encode('utf-8')}  |  #{black_rook.encode('utf-8')}  |"
+puts "_________________________________________________"
+puts ""
+puts "|  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |"
+puts "_________________________________________________"
+puts ""
+puts "|     |     |     |     |     |     |     |     |"
+puts "_________________________________________________"
+puts ""
+puts "|     |     |     |     |     |     |     |     |"
+puts "_________________________________________________"
+puts ""
+puts "|     |     |     |     |     |     |     |     |"
+puts "_________________________________________________"
+puts ""
+puts "|     |     |     |     |     |     |     |     |"
+puts "_________________________________________________"
+puts ""
+puts "|     |     |     |     |     |     |     |     |"
+puts "_________________________________________________"
+puts ""
+puts "|  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |"
+puts "_________________________________________________"
+puts ""
+puts "|  #{white_rook.encode('utf-8')}  |  #{white_knight.encode('utf-8')}  |  #{white_bishop.encode('utf-8')}  |  #{white_queen.encode('utf-8')}  |  #{white_king.encode('utf-8')}   |  #{white_bishop.encode('utf-8')}  |  #{white_knight.encode('utf-8')}  |  #{white_rook.encode('utf-8')}  |"
+puts "_________________________________________________"
+puts ""
 
+# to do
+
+# add piece information to nodes
+
+# print board with pieces on it
 
 
 
