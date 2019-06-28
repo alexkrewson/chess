@@ -203,7 +203,7 @@ class Game
 	def move_prompt
 		player = 1 if @turn % 2 != 0
 		player = 2 if @turn % 2 == 0
-		@this_move_piece_name = ""
+		@this_move_piece_name = "nothing"
 		@this_move_direction = ""
 		@this_move_distance = 9000
 		while !valid_move?(@this_move_piece_name,@this_move_direction,@this_move_distance)
@@ -227,23 +227,28 @@ class Game
 	end
 
 	def valid_move?(piece_name,direction,distance)
-		puts "current coordinates: #{node_of(piece_name).coordinates}"
-		puts "piece_name: #{piece_name}"
-		puts "distance (in valid_move?): #{distance}"
-		puts "current coordinates[1] - distance: #{node_of(piece_name).coordinates[0] - distance}"
+		# puts "current coordinates: #{node_of(piece_name).coordinates}"
+		# puts "piece_name: #{piece_name}"
+		# puts "distance (in valid_move?): #{distance}"
+		# # puts "current coordinates[0] - distance: #{node_of(piece_name).coordinates[0] - distance}"
+		# puts "node_of(piece_name).up.piece_name: #{node_of(piece_name).up.piece}"
+		# puts "node_of(piece_name).up.piece_name == "": #{node_of(piece_name).up.piece_name == ""}"
+		if piece_name != "nothing"
+			@all_clear |= all_clear?(piece_name,direction,distance)
+		end
 		if @pawn_list.include?(piece_name)
 			if @white_list.include?(piece_name)
-				if direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9
+				if direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9 && @all_clear
 					return true
 				else
-					puts "INVALID WHITE MOVE"
+					puts "INVALID MOVE"
 					return false
 				end
 			elsif @black_list.include?(piece_name)
-				if direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0
+				if direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0 && @all_clear
 					return true
 				else 
-					puts "INVALID BLACK MOVE"
+					puts "INVALID MOVE"
 					# puts "current coordinates[1]: #{node_of(piece_name).coordinates[1]}"
 					# puts "current coordinates[1] - distance: #{node_of(piece_name).coordinates[1] - distance}"
 					return false													
@@ -351,10 +356,32 @@ class Game
 		end
 	end
 
+	def all_clear?(piece_name,direction,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		while spots < distance
+			puts "current_node: #{current_node}"
+			puts "current_node.coordinates: #{current_node.coordinates}"
+			puts "current_node.piece_name: #{current_node.piece_name}"
+			if direction == "u"
+				current_node = current_node.up
+			end
+			if direction == "d"
+				current_node = current_node.down
+			end
+			if current_node.piece_name != ""
+				show_board
+				return false
+			end
+			spots += 1
+		end
+		return true
+	end
+
 	def move(piece_name,direction,distance)
-		puts "piece_name: #{piece_name}"
-		puts "direction: #{direction}"
-		puts "distance: #{distance}"
+		# puts "piece_name: #{piece_name}"
+		# puts "direction: #{direction}"
+		# puts "distance: #{distance}"
 
 		if direction == "u"
 			move_up(piece_name,distance)
@@ -410,10 +437,10 @@ class Game
 		current_node = node_of(piece_name)
 		spots = 0
 		while spots < distance
-			puts "current_node.coordinates: #{current_node.coordinates}"
-			puts "current_node.piece_name: #{current_node.piece_name}"
-			puts "current_node.piece: #{current_node.piece}"
-			puts "current_node: #{current_node}"
+			# puts "current_node.coordinates: #{current_node.coordinates}"
+			# puts "current_node.piece_name: #{current_node.piece_name}"
+			# puts "current_node.piece: #{current_node.piece}"
+			# puts "current_node: #{current_node}"
 			current_node.up.piece_name = piece_name
 			current_node.up.piece = current_node.piece
 			current_node.piece_name = ""
@@ -427,10 +454,10 @@ class Game
 		current_node = node_of(piece_name)
 		spots = 0
 		while spots < distance
-			puts "current_node.coordinates: #{current_node.coordinates}"
-			puts "current_node.piece_name: #{current_node.piece_name}"
-			puts "current_node.piece: #{current_node.piece}"
-			puts "current_node: #{current_node}"
+			# puts "current_node.coordinates: #{current_node.coordinates}"
+			# puts "current_node.piece_name: #{current_node.piece_name}"
+			# puts "current_node.piece: #{current_node.piece}"
+			# puts "current_node: #{current_node}"
 			current_node.right.piece_name = piece_name
 			current_node.right.piece = current_node.piece
 			current_node.piece_name = ""
@@ -444,10 +471,10 @@ class Game
 		current_node = node_of(piece_name)
 		spots = 0
 		while spots < distance
-			puts "current_node.coordinates: #{current_node.coordinates}"
-			puts "current_node.piece_name: #{current_node.piece_name}"
-			puts "current_node.piece: #{current_node.piece}"
-			puts "current_node: #{current_node}"
+			# puts "current_node.coordinates: #{current_node.coordinates}"
+			# puts "current_node.piece_name: #{current_node.piece_name}"
+			# puts "current_node.piece: #{current_node.piece}"
+			# puts "current_node: #{current_node}"
 			current_node.down.piece_name = piece_name
 			current_node.down.piece = current_node.piece
 			current_node.piece_name = ""
@@ -461,10 +488,10 @@ class Game
 		current_node = node_of(piece_name)
 		spots = 0
 		while spots < distance
-			puts "current_node.coordinates: #{current_node.coordinates}"
-			puts "current_node.piece_name: #{current_node.piece_name}"
-			puts "current_node.piece: #{current_node.piece}"
-			puts "current_node: #{current_node}"
+			# puts "current_node.coordinates: #{current_node.coordinates}"
+			# puts "current_node.piece_name: #{current_node.piece_name}"
+			# puts "current_node.piece: #{current_node.piece}"
+			# puts "current_node: #{current_node}"
 			current_node.left.piece_name = piece_name
 			current_node.left.piece = current_node.piece
 			current_node.piece_name = ""
