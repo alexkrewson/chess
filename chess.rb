@@ -1,13 +1,112 @@
-
 class Node
-	attr_accessor :up, :upRight, :right, :downRight, :down, :downLeft, :left, :upLeft, :coordinates, :piece, :nodes
+	attr_accessor :up, :upRight, :right, :downRight, :down, :downLeft, :left, :upLeft, :coordinates, :piece, :nodes, :piece_name
 
 	def initialize(coordinates)
-		@coordinates = coordinates
+	@coordinates = coordinates
 
-		@@nodes.push(self)
-		# puts "coordinates in initialize: #{@coordinates}"
-		# puts ""
+	case @coordinates
+	when [1,1]
+		self.piece_name = "wr1"
+		self.piece = "\u265C"
+	when [1,2]
+		self.piece_name = "wk1"
+		self.piece = "\u265E"
+	when [1,3]
+		self.piece_name = "wb1"
+		self.piece = "\u265D"
+	when [1,4]
+		self.piece_name = "wq "
+		self.piece = "\u265B"
+	when [1,5]
+		self.piece_name = "wk "
+		self.piece = "\u265A"
+	when [1,6]
+		self.piece_name = "wb2"
+		self.piece = "\u265D"
+	when [1,7]
+		self.piece_name = "wk2"
+		self.piece = "\u265E"
+	when [1,8]
+		self.piece_name = "wr2"
+		self.piece = "\u265C"
+	when [2,1]
+		self.piece_name = "wp1"
+		self.piece = "\u265F"
+	when [2,2]
+		self.piece_name = "wp2"
+		self.piece = "\u265F"
+	when [2,3]
+		self.piece_name = "wp3"
+		self.piece = "\u265F"
+	when [2,4]
+		self.piece_name = "wp4"
+		self.piece = "\u265F"
+	when [2,5]
+		self.piece_name = "wp5"
+		self.piece = "\u265F"
+	when [2,6]
+		self.piece_name = "wp6"
+		self.piece = "\u265F"
+	when [2,7]
+		self.piece_name = "wp7"
+		self.piece = "\u265F"
+	when [2,8]
+		self.piece_name = "wp8"
+		self.piece = "\u265F"
+	when [8,1]
+		self.piece_name = "br1"
+		self.piece = "\u2656"
+	when [8,2]
+		self.piece_name = "bk1"
+		self.piece = "\u2658"
+	when [8,3]
+		self.piece_name = "bb1"
+		self.piece = "\u2657"
+	when [8,4]
+		self.piece_name = "bq "
+		self.piece = "\u2655"
+	when [8,5]
+		self.piece_name = "bk "
+		self.piece = "\u2654"
+	when [8,6]
+		self.piece_name = "bb2"
+		self.piece = "\u2657"
+	when [8,7]
+		self.piece_name = "bk2"
+		self.piece = "\u2658"
+	when [8,8]
+		self.piece_name = "br2"
+		self.piece = "\u2656"
+	when [7,1]
+		self.piece_name = "bp1"
+		self.piece = "\u2659"
+	when [7,2]
+		self.piece_name = "bp2"
+		self.piece = "\u2659"
+	when [7,3]
+		self.piece_name = "bp3"
+		self.piece = "\u2659"
+	when [7,4]
+		self.piece_name = "bp4"
+		self.piece = "\u2659"
+	when [7,5]
+		self.piece_name = "bp5"
+		self.piece = "\u2659"
+	when [7,6]
+		self.piece_name = "bp6"
+		self.piece = "\u2659"
+	when [7,7]
+		self.piece_name = "bp7"
+		self.piece = "\u2659"
+	when [7,8]
+		self.piece_name = "bp8"
+		self.piece = "\u2659"
+	else
+		self.piece_name = ""
+		self.piece = "  "
+	end	
+
+	@@nodes.push(self)
 	end
 
 	def self.make_nodes
@@ -17,242 +116,445 @@ class Node
 		j = 1
 		while i < 9
 			while j < 9
-				node = Node.new([i,j]) unless invalidNode?([i,j])
+				node = Node.new([i,j])
 				j += 1
-			end # while coordinates[1] < 9
-			j = 0
+			end # while j < 9
+			j = 1
 			i += 1
-		end # while coordinates[0] < 9
-		@@nodes
+		end # while i < 9
+			@@nodes
 
-	end # self.buildBoard
+			board = @@nodes
+			j = 0
+			while j < board.length
+				node = board[j]
+				right_coordinates = [node.coordinates[0],node.coordinates[1]+1]
+				left_coordinates = [node.coordinates[0],node.coordinates[1]-1]
+				up_coordinates = [node.coordinates[0]+1,node.coordinates[1]]
+				down_coordinates = [node.coordinates[0]-1,node.coordinates[1]]
 
-	def self.invalidNode?(coordinates)
-		if coordinates[0] < 1 || coordinates[0] > 8 || coordinates[1] < 1 || coordinates[1] > 8 
-			return true
-		end
-			return false
-	end # validNode
+				i = 0
+				while i < board.length
+					if board[i].coordinates == right_coordinates
+						node.right = board[i]
+						# puts "node.right.coordinates: #{node.right.coordinates}"
+					end
+				i += 1
+				end # i < board.length
+
+				i = 0
+				while i < board.length
+					if board[i].coordinates == left_coordinates
+						node.left = board[i]
+						# puts "node.left.coordinates: #{node.left.coordinates}"
+					end
+				i += 1
+				end # i < board.length
+
+				i = 0
+				while i < board.length
+					if board[i].coordinates == up_coordinates
+						node.up = board[i]
+						# puts "node.up.coordinates: #{node.up.coordinates}"
+					end
+				i += 1
+				end # i < board.length
+
+				i = 0
+				while i < board.length
+					if board[i].coordinates == down_coordinates
+					node.down = board[i]
+					# puts "node.up.coordinates: #{node.up.coordinates}"
+					end
+				i += 1
+				end # i < board.length
+		j += 1
+		end # j < board.length
+		board
+	end # self.make_nodes
 end # class Node
 
-board = Node.make_nodes
 
-j = 0
-while j < board.length
-	node = board[j]
-	right_coordinates = [node.coordinates[0],node.coordinates[1]+1]
-	left_coordinates = [node.coordinates[0],node.coordinates[1]-1]
-	up_coordinates = [node.coordinates[0]+1,node.coordinates[1]]
-	down_coordinates = [node.coordinates[0]-1,node.coordinates[1]]
+class Game
 
-	i = 0
-	while i < board.length
-		if board[i].coordinates == right_coordinates
-			node.right = board[i]
-			# puts "node.right.coordinates: #{node.right.coordinates}"
-		end
-		i += 1
+	def initialize
+		@board = Node.make_nodes
+		@turn = 1
+		@pawn_list = ["wp1","wp2","wp3","wp4","wp5","wp6","wp7","wp8","bp1","bp2","bp3","bp4","bp5","bp6","bp7","bp8"]
+		@rook_list = ["wr1","wr2","br1","br2"]
+		@knight_list = ["wk1","wk2","bk1","bk2"]
+		@bishop_list = ["wb1","wb2","bb1","bb2"]
+		@king_list = ["wk ","bk "]
+		@queen_list = ["wq ","bq "]
+		@white_list = ["wp1","wp2","wp3","wp4","wp5","wp6","wp7","wp8","wr1","wr2","wk1","wk2","wb1","wb2","wk","wq"]
+		@black_list = ["bp1","bp2","bp3","bp4","bp5","bp6","bp7","bp8","br1","br2","bk1","bk2","bb1","bb2","bk","bq"]
 	end
 
-	i = 0
-	while i < board.length
-		if board[i].coordinates == left_coordinates
-			node.left = board[i]
-			# puts "node.left.coordinates: #{node.left.coordinates}"
+	def play
+		while @turn < 5 # !@finished
+			show_board
+			# move("@white_rook2","up",7)
+			move_prompt
+			show_board
+			@turn += 1
 		end
-		i += 1
 	end
 
-	i = 0
-	while i < board.length
-		if board[i].coordinates == up_coordinates
-			node.up = board[i]
-			# puts "node.up.coordinates: #{node.up.coordinates}"
+	def move_prompt
+		player = 1 if @turn % 2 != 0
+		player = 2 if @turn % 2 == 0
+		@this_move_piece_name = ""
+		@this_move_direction = ""
+		@this_move_distance = 9000
+		while !valid_move?(@this_move_piece_name,@this_move_direction,@this_move_distance)
+			puts ""
+			puts "Player #{player}, which piece would you like to move?"
+			puts ""
+			@this_move_piece_name = gets.chomp
+			puts ""
+			puts "Player #{player}, in which direction would you like to move #{@this_move_piece_name}?"
+			puts ""
+			@this_move_direction = gets.chomp
+			puts ""
+			puts "Player #{player}, how far would you like to travel #{@this_move_direction}?"
+			puts ""
+			@this_move_distance = gets.chomp.to_i
+			puts "@this_move_piece_name: #{@this_move_piece_name}"
+			puts "@this_move_direction: #{@this_move_direction}"
+			puts "@this_move_distance: #{@this_move_distance}"
 		end
-		i += 1
+		move(@this_move_piece_name,@this_move_direction,@this_move_distance)
 	end
 
-	i = 0
-	while i < board.length
-		if board[i].coordinates == down_coordinates
-			node.down = board[i]
-			# puts "node.up.coordinates: #{node.up.coordinates}"
-		end
-		i += 1
-	end
-
-	j += 1
-end
-
-
-node = board[62]
-puts "node.coordinates #{node.coordinates}"
-if node.left
-	puts "node.left.coordinates #{node.left.coordinates}"
-end
-
-if node.right
-puts "node.right.coordinates #{node.right.coordinates}"
-end
-
-if node.up
-puts "node.up.coordinates #{node.up.coordinates}"
-end
-
-if node.down
-puts "node.down.coordinates #{node.down.coordinates}"
-end
-
-white_king = "\u265A"
-white_queen = "\u265B"
-white_rook = "\u265C"
-white_bishop = "\u265D"
-white_knight = "\u265E"
-white_pawn = "\u265F"
-
-black_king = "\u2654"
-black_queen = "\u2655"
-black_rook = "\u2656"
-black_bishop = "\u2657"
-black_knight = "\u2658"
-black_pawn = "\u2659"
-# puts white_king.encode('utf-8')
-
-puts "_________________________________________________"
-puts ""
-puts "|  #{black_rook.encode('utf-8')}  |  #{black_knight.encode('utf-8')}  |  #{black_bishop.encode('utf-8')}  |  #{black_queen.encode('utf-8')}  |  #{black_king.encode('utf-8')}   |  #{black_bishop.encode('utf-8')}  |  #{black_knight.encode('utf-8')}  |  #{black_rook.encode('utf-8')}  |"
-puts "_________________________________________________"
-puts ""
-puts "|  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |  #{black_pawn.encode('utf-8')}  |"
-puts "_________________________________________________"
-puts ""
-puts "|     |     |     |     |     |     |     |     |"
-puts "_________________________________________________"
-puts ""
-puts "|     |     |     |     |     |     |     |     |"
-puts "_________________________________________________"
-puts ""
-puts "|     |     |     |     |     |     |     |     |"
-puts "_________________________________________________"
-puts ""
-puts "|     |     |     |     |     |     |     |     |"
-puts "_________________________________________________"
-puts ""
-puts "|     |     |     |     |     |     |     |     |"
-puts "_________________________________________________"
-puts ""
-puts "|  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |  #{white_pawn.encode('utf-8')}  |"
-puts "_________________________________________________"
-puts ""
-puts "|  #{white_rook.encode('utf-8')}  |  #{white_knight.encode('utf-8')}  |  #{white_bishop.encode('utf-8')}  |  #{white_queen.encode('utf-8')}  |  #{white_king.encode('utf-8')}   |  #{white_bishop.encode('utf-8')}  |  #{white_knight.encode('utf-8')}  |  #{white_rook.encode('utf-8')}  |"
-puts "_________________________________________________"
-puts ""
-
-# to do
-
-# add piece information to nodes
-
-# print board with pieces on it
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Node.buildBoard
-
-# class Node
-# 	attr_accessor :left, :right, :up, :down, :coordinates, :nodes
-
-# 	def initialize(coordinates,nodes)
-# 		@coordinates = coordinates
-# 		@nodes = nodes
-# 		@nodes.push(self.coordinates)
+	def valid_move?(piece_name,direction,distance)
+		puts "current coordinates: #{node_of(piece_name).coordinates}"
+		puts "piece_name: #{piece_name}"
+		puts "distance (in valid_move?): #{distance}"
+		puts "current coordinates[1] - distance: #{node_of(piece_name).coordinates[0] - distance}"
+		if @pawn_list.include?(piece_name)
+			if @white_list.include?(piece_name)
+				if direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9
+					return true
+				else
+					puts "INVALID WHITE MOVE"
+					return false
+				end
+			elsif @black_list.include?(piece_name)
+				if direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0
+					return true
+				else 
+					puts "INVALID BLACK MOVE"
+					# puts "current coordinates[1]: #{node_of(piece_name).coordinates[1]}"
+					# puts "current coordinates[1] - distance: #{node_of(piece_name).coordinates[1] - distance}"
+					return false													
+				end
+			else
+				puts "INVALID MOVE"
+				return false	
+			end
+		elsif @rook_list.include?(piece_name)
+			if @white_list.include?(piece_name)
+				if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+					return true
+				else
+					puts "INVALID MOVE"
+					return false
+				end
+			elsif @black_list.include?(piece_name)
+				if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+					return true
+				else 
+					puts "INVALID MOVE"
+					return false													
+				end
+			else
+				puts "INVALID MOVE"
+				return false	
+			end
+		# elsif @bishop_list.include?(piece_name)
+		# 	if @white_list.include?(piece_name)
+		# 		if direction == "ul" || direction == "ur" || direction == "dl" || direction == "lr"
+		# 			return true
+		# 		else
+		# 			puts "INVALID MOVE"
+		# 			return false
+		# 		end
+		# 	elsif @black_list.include?(piece_name)
+		# 		if direction == "ul" || direction == "ur" || direction == "dl" || direction == "lr"
+		# 			return true
+		# 		else 
+		# 			puts "INVALID MOVE"
+		# 			return false													
+		# 		end
+		# 	else
+		# 		puts "INVALID MOVE"
+		# 		return false	
+		# 	end
+		# elsif @rook_list.include?(piece_name)
+		# 	if @white_list.include?(piece_name)
+		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+		# 			return true
+		# 		else
+		# 			puts "INVALID MOVE"
+		# 			return false
+		# 		end
+		# 	elsif @black_list.include?(piece_name)
+		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+		# 			return true
+		# 		else 
+		# 			puts "INVALID MOVE"
+		# 			return false													
+		# 		end
+		# 	else
+		# 		puts "INVALID MOVE"
+		# 		return false	
+		# 	end
+		# elsif @rook_list.include?(piece_name)
+		# 	if @white_list.include?(piece_name)
+		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+		# 			return true
+		# 		else
+		# 			puts "INVALID MOVE"
+		# 			return false
+		# 		end
+		# 	elsif @black_list.include?(piece_name)
+		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+		# 			return true
+		# 		else 
+		# 			puts "INVALID MOVE"
+		# 			return false													
+		# 		end
+		# 	else
+		# 		puts "INVALID MOVE"
+		# 		return false	
+		# 	end
+		# elsif @rook_list.include?(piece_name)
+		# 	if @white_list.include?(piece_name)
+		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+		# 			return true
+		# 		else
+		# 			puts "INVALID MOVE"
+		# 			return false
+		# 		end
+		# 	elsif @black_list.include?(piece_name)
+		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+		# 			return true
+		# 		else 
+		# 			puts "INVALID MOVE"
+		# 			return false													
+		# 		end
+		# 	else
+		# 		puts "INVALID MOVE"
+		# 		return false	
+		# 	end
 		
-# 	end
+		end
+	end
 
-# 	def insert_right
-# 		last_node = self
-# 		puts "last_node.coordinates #{last_node.coordinates}"
-# 		if last_node.coordinates[1] > 7
-# 			up_coordinates = [last_node.coordinates[0]+1,1]
-# 			if up_coordinates[0] < 9
-# 				new_node = Node.new(up_coordinates,@nodes)
-# 				new_node.insert_right
-# 			end
-# 		else
-# 			last_node.coordinates[1] < 8
-# 			right_coordinates = [last_node.coordinates[0],last_node.coordinates[1]+1]
-# 			new_node = Node.new(right_coordinates,@nodes)
-# 			puts "new_node.coordinates (right)#{new_node.coordinates}"
-# 			# sleep(0.5)
-# 			new_node.right = new_node.insert_right
-# 			puts "finished going right"
-# 			new_node.left = last_node
-# 		end
-# 	end
+	def move(piece_name,direction,distance)
+		puts "piece_name: #{piece_name}"
+		puts "direction: #{direction}"
+		puts "distance: #{distance}"
 
-	# def insert_up
-	# 	last_node = self
-	# 	if last_node.coordinates[0] < 8
-	# 		up_coordinates = [last_node.coordinates[0]+1,last_node.coordinates[1]]
-	# 		new_node = Node.new(up_coordinates,@nodes)
-	# 		puts "new_node.coordinates (up)#{new_node.coordinates}"
-	# 		new_node.down = last_node
-	# 		new_node.right = new_node.insert_right
-	# 		# new_node.up = new_node.insert_up(new_node)
-	# 	end
-	# 	new_node
-	# end
+		if direction == "u"
+			move_up(piece_name,distance)
+		elsif direction == "r"
+			move_right(piece_name,distance)
+		elsif direction == "d"
+			move_down(piece_name,distance)
+		elsif direction == "l"
+			move_left(piece_name,distance)
+		end
+			
 
-# 	def self.build_board
-# 		board = Node.new([1,1],[])
-# 		board.right = board.insert_right
-# 		# puts "board.right.coordinates: #{board.right.right.coordinates}"
-# 		# board.up = board.insert_up(board)
-# 		# puts "board.up.coordinates: #{board.up.coordinates}"
-# 		board
-# 	end
+		# elsif piece_name.include?("king") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# elsif piece_name.include?("queen") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# elsif piece_name.include?("rook") && piece_name.include?("white")
+		# 	if direction == "up"
+		# 		move_up(piece_name,distance)
+		# 	elsif direction == "right"
+		# 		move_right(piece_name,distance)
+		# 	elsif direction == "donw"
+		# 		move_down(piece_name,distance)
+		# 	elsif direction == "left"
+		# 		move_left(piece_name,distance)
+		# 	else
+		# 		puts "woops"
+		# 	end
+		# elsif piece_name.include?("bishop") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# elsif piece_name.include?("knight") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# elsif piece_name.include?("pawn") && piece_name.include?("white")
+			# move_up(piece_name,distance)
+		# elsif piece_name.include?("rook") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# elsif piece_name.include?("rook") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# elsif piece_name.include?("rook") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# elsif piece_name.include?("rook") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# elsif piece_name.include?("rook") && piece_name.include?("white")
+		# 	move_up(piece_name,distance)
+		# else
+		# 	return "woops"
+		# end # long else if for piece categorizing
 
-# end
 
-# node = Node.new(1,[])
-# puts "node: #{node.inspect}"
-# board = Node.build_board
-# puts "board: #{board.up.up.right.right.up.right.coordinates}"
-# puts "board.nodes: #{board.nodes}"
-# thing = board.up.up.up.up.up.up
-# thing = board.right
-# puts "thing: #{thing.coordinates}"
-# puts "thing.left: #{thing.left.coordinates}"
-# puts "thing.right: #{thing.right.coordinates}"
-# puts "thing.up: #{thing.up.coordinates}"
-# puts "thing.down: #{thing.down.coordinates}"
+	end # move(piece,destination)
+
+	def move_up(piece_name,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		while spots < distance
+			puts "current_node.coordinates: #{current_node.coordinates}"
+			puts "current_node.piece_name: #{current_node.piece_name}"
+			puts "current_node.piece: #{current_node.piece}"
+			puts "current_node: #{current_node}"
+			current_node.up.piece_name = piece_name
+			current_node.up.piece = current_node.piece
+			current_node.piece_name = ""
+			current_node.piece = " "
+			current_node = current_node.up
+			spots += 1
+		end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_right(piece_name,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		while spots < distance
+			puts "current_node.coordinates: #{current_node.coordinates}"
+			puts "current_node.piece_name: #{current_node.piece_name}"
+			puts "current_node.piece: #{current_node.piece}"
+			puts "current_node: #{current_node}"
+			current_node.right.piece_name = piece_name
+			current_node.right.piece = current_node.piece
+			current_node.piece_name = ""
+			current_node.piece = " "
+			current_node = current_node.right
+			spots += 1
+		end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_down(piece_name,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		while spots < distance
+			puts "current_node.coordinates: #{current_node.coordinates}"
+			puts "current_node.piece_name: #{current_node.piece_name}"
+			puts "current_node.piece: #{current_node.piece}"
+			puts "current_node: #{current_node}"
+			current_node.down.piece_name = piece_name
+			current_node.down.piece = current_node.piece
+			current_node.piece_name = ""
+			current_node.piece = " "
+			current_node = current_node.down
+			spots += 1
+		end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_left(piece_name,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		while spots < distance
+			puts "current_node.coordinates: #{current_node.coordinates}"
+			puts "current_node.piece_name: #{current_node.piece_name}"
+			puts "current_node.piece: #{current_node.piece}"
+			puts "current_node: #{current_node}"
+			current_node.left.piece_name = piece_name
+			current_node.left.piece = current_node.piece
+			current_node.piece_name = ""
+			current_node.piece = " "
+			current_node = current_node.left
+			spots += 1
+		end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def node_of(piece_name)
+		i = 0
+		while i < @board.length
+			if @board[i].piece_name == piece_name
+				return @board[i]
+			end # if @board[i].coordinates == coordinates
+		i += 1
+		end # while i < @board.length
+	end # node_of(piece)
+
+	def node_at(coordinates)
+		i = 0
+		while i < @board.length
+			# puts "@board[i].coordinates: #{@board[i].coordinates}"
+			if @board[i].coordinates == coordinates
+				return @board[i]
+			end # if @board[i].coordinates == coordinates
+			i += 1
+		end # while i < @board.length
+	end # node_at(coordinates)
+
+	def show_board
+	puts "_________________________________________"
+	puts ""
+	puts "| #{node_at([8,1]).piece.encode('utf-8')}#{node_at([8,1]).piece_name[-1]} | #{node_at([8,2]).piece.encode('utf-8')}#{node_at([8,2]).piece_name[-1]} | #{node_at([8,3]).piece.encode('utf-8')}#{node_at([8,3]).piece_name[-1]} | #{node_at([8,4]).piece.encode('utf-8')}#{node_at([8,4]).piece_name[-1]} | #{node_at([8,5]).piece.encode('utf-8')}#{node_at([8,5]).piece_name[-1]} | #{node_at([8,6]).piece.encode('utf-8')}#{node_at([8,6]).piece_name[-1]} | #{node_at([8,7]).piece.encode('utf-8')}#{node_at([8,7]).piece_name[-1]} | #{node_at([8,8]).piece.encode('utf-8')}#{node_at([8,8]).piece_name[-1]} |"
+	puts "_________________________________________"
+	puts ""
+	puts "| #{node_at([7,1]).piece.encode('utf-8')}#{node_at([7,1]).piece_name[-1]} | #{node_at([7,2]).piece.encode('utf-8')}#{node_at([7,2]).piece_name[-1]} | #{node_at([7,3]).piece.encode('utf-8')}#{node_at([7,3]).piece_name[-1]} | #{node_at([7,4]).piece.encode('utf-8')}#{node_at([7,4]).piece_name[-1]} | #{node_at([7,5]).piece.encode('utf-8')}#{node_at([7,5]).piece_name[-1]} | #{node_at([7,6]).piece.encode('utf-8')}#{node_at([7,6]).piece_name[-1]} | #{node_at([7,7]).piece.encode('utf-8')}#{node_at([7,7]).piece_name[-1]} | #{node_at([7,8]).piece.encode('utf-8')}#{node_at([7,8]).piece_name[-1]} |"
+	puts "_________________________________________"
+	puts ""
+	puts "| #{node_at([6,1]).piece.encode('utf-8')}#{node_at([6,1]).piece_name[-1]} | #{node_at([6,2]).piece.encode('utf-8')}#{node_at([6,2]).piece_name[-1]} | #{node_at([6,3]).piece.encode('utf-8')}#{node_at([6,3]).piece_name[-1]} | #{node_at([6,4]).piece.encode('utf-8')}#{node_at([6,4]).piece_name[-1]} | #{node_at([6,5]).piece.encode('utf-8')}#{node_at([6,5]).piece_name[-1]} | #{node_at([6,6]).piece.encode('utf-8')}#{node_at([6,6]).piece_name[-1]} | #{node_at([6,7]).piece.encode('utf-8')}#{node_at([6,7]).piece_name[-1]} | #{node_at([6,8]).piece.encode('utf-8')}#{node_at([6,8]).piece_name[-1]} |"
+	puts "_________________________________________"
+	puts ""
+	puts "| #{node_at([5,1]).piece.encode('utf-8')}#{node_at([5,1]).piece_name[-1]} | #{node_at([5,2]).piece.encode('utf-8')}#{node_at([5,2]).piece_name[-1]} | #{node_at([5,3]).piece.encode('utf-8')}#{node_at([5,3]).piece_name[-1]} | #{node_at([5,4]).piece.encode('utf-8')}#{node_at([5,4]).piece_name[-1]} | #{node_at([5,5]).piece.encode('utf-8')}#{node_at([5,5]).piece_name[-1]} | #{node_at([5,6]).piece.encode('utf-8')}#{node_at([5,6]).piece_name[-1]} | #{node_at([5,7]).piece.encode('utf-8')}#{node_at([5,7]).piece_name[-1]} | #{node_at([5,8]).piece.encode('utf-8')}#{node_at([5,8]).piece_name[-1]} |"
+	puts "_________________________________________"
+	puts ""
+	puts "| #{node_at([4,1]).piece.encode('utf-8')}#{node_at([4,1]).piece_name[-1]} | #{node_at([4,2]).piece.encode('utf-8')}#{node_at([4,2]).piece_name[-1]} | #{node_at([4,3]).piece.encode('utf-8')}#{node_at([4,3]).piece_name[-1]} | #{node_at([4,4]).piece.encode('utf-8')}#{node_at([4,4]).piece_name[-1]} | #{node_at([4,5]).piece.encode('utf-8')}#{node_at([4,5]).piece_name[-1]} | #{node_at([4,6]).piece.encode('utf-8')}#{node_at([4,6]).piece_name[-1]} | #{node_at([4,7]).piece.encode('utf-8')}#{node_at([4,7]).piece_name[-1]} | #{node_at([4,8]).piece.encode('utf-8')}#{node_at([4,8]).piece_name[-1]} |"
+	puts "_________________________________________"
+	puts ""
+	puts "| #{node_at([3,1]).piece.encode('utf-8')}#{node_at([3,1]).piece_name[-1]} | #{node_at([3,2]).piece.encode('utf-8')}#{node_at([3,2]).piece_name[-1]} | #{node_at([3,3]).piece.encode('utf-8')}#{node_at([3,3]).piece_name[-1]} | #{node_at([3,4]).piece.encode('utf-8')}#{node_at([3,4]).piece_name[-1]} | #{node_at([3,5]).piece.encode('utf-8')}#{node_at([3,5]).piece_name[-1]} | #{node_at([3,6]).piece.encode('utf-8')}#{node_at([3,6]).piece_name[-1]} | #{node_at([3,7]).piece.encode('utf-8')}#{node_at([3,7]).piece_name[-1]} | #{node_at([3,8]).piece.encode('utf-8')}#{node_at([3,8]).piece_name[-1]} |"
+	puts "_________________________________________"
+	puts ""
+	puts "| #{node_at([2,1]).piece.encode('utf-8')}#{node_at([2,1]).piece_name[-1]} | #{node_at([2,2]).piece.encode('utf-8')}#{node_at([2,2]).piece_name[-1]} | #{node_at([2,3]).piece.encode('utf-8')}#{node_at([2,3]).piece_name[-1]} | #{node_at([2,4]).piece.encode('utf-8')}#{node_at([2,4]).piece_name[-1]} | #{node_at([2,5]).piece.encode('utf-8')}#{node_at([2,5]).piece_name[-1]} | #{node_at([2,6]).piece.encode('utf-8')}#{node_at([2,6]).piece_name[-1]} | #{node_at([2,7]).piece.encode('utf-8')}#{node_at([2,7]).piece_name[-1]} | #{node_at([2,8]).piece.encode('utf-8')}#{node_at([2,8]).piece_name[-1]} |"
+	puts "_________________________________________"
+	puts ""
+	puts "| #{node_at([1,1]).piece.encode('utf-8')}#{node_at([1,1]).piece_name[-1]} | #{node_at([1,2]).piece.encode('utf-8')}#{node_at([1,2]).piece_name[-1]} | #{node_at([1,3]).piece.encode('utf-8')}#{node_at([1,3]).piece_name[-1]} | #{node_at([1,4]).piece.encode('utf-8')}#{node_at([1,4]).piece_name[-1]} | #{node_at([1,5]).piece.encode('utf-8')}#{node_at([1,5]).piece_name[-1]} | #{node_at([1,6]).piece.encode('utf-8')}#{node_at([1,6]).piece_name[-1]} | #{node_at([1,7]).piece.encode('utf-8')}#{node_at([1,7]).piece_name[-1]} | #{node_at([1,8]).piece.encode('utf-8')}#{node_at([1,8]).piece_name[-1]} |"
+	puts "_________________________________________"
+	puts ""
+	end # show_board
+end #class Game
+
+game = Game.new
+game.play
+
+# make valid move rules for each piece
+
+	# add collision detection
+
+	# add check to see if piece is still alive
+
+# make all directions for all pieces
+
+# attack
+
+# check for checkmate and stalemate
+
+# make it saveable
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
