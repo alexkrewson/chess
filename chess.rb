@@ -102,8 +102,8 @@ class Node
 		self.piece_name = "bp8"
 		self.piece = "\u2659"
 	else
-		self.piece_name = ""
-		self.piece = "  "
+		self.piece_name = "empty "
+		self.piece = " "
 	end	
 
 	@@nodes.push(self)
@@ -179,6 +179,32 @@ class Game
 
 	def initialize
 		@board = Node.make_nodes
+		@piece_info = []
+		# i = 0
+		# saved_game = File.open("chess_save.txt")#.split('/n')
+		# while i < 64
+		# 	# saved_game.readline
+		# 	puts "saved_game[i]: #{saved_game[i]}"
+		# 	# new_node_info = saved_game[0].split(';')
+		# 	# @board[i].piece = 
+		# 	# newboard = 
+		# 	i += 1
+		# end
+		
+
+		
+
+# 		puts "@board[0].piece_name: #{@board[0].piece_name}"
+# @board[0].piece_name = "empty "
+# @board[0].piece = " "
+# 		puts "@board[0].piece_name: #{@board[0].piece_name}"
+# 		puts "piece_info[30][1].length: #{piece_info[30][1].length}"
+
+
+		# puts "piece_info[0]: #{piece_info[1][0]}"
+		# puts 	"saved_game[0][0]: #{saved_game[2]}"
+		# puts 	"saved_game[1]: #{saved_game[1]}"
+		# puts 	"saved_game[2]: #{saved_game[2]}"
 		@turn = 1
 		@pawn_list = ["wp1","wp2","wp3","wp4","wp5","wp6","wp7","wp8","bp1","bp2","bp3","bp4","bp5","bp6","bp7","bp8"]
 		@rook_list = ["wr1","wr2","br1","br2"]
@@ -186,27 +212,74 @@ class Game
 		@bishop_list = ["wb1","wb2","bb1","bb2"]
 		@king_list = ["wk ","bk "]
 		@queen_list = ["wq ","bq "]
-		@white_list = ["wp1","wp2","wp3","wp4","wp5","wp6","wp7","wp8","wr1","wr2","wk1","wk2","wb1","wb2","wk","wq"]
-		@black_list = ["bp1","bp2","bp3","bp4","bp5","bp6","bp7","bp8","br1","br2","bk1","bk2","bb1","bb2","bk","bq"]
+		@white_list = ["wp1","wp2","wp3","wp4","wp5","wp6","wp7","wp8","wr1","wr2","wk1","wk2","wb1","wb2","wk ","wq "]
+		@black_list = ["bp1","bp2","bp3","bp4","bp5","bp6","bp7","bp8","br1","br2","bk1","bk2","bb1","bb2","bk ","bq "]
+
+		@this_move_piece_name = "nothing"
+		@this_move_direction = ""
+		@this_move_distance = 9000
+		@white_mortalities = []
+		@black_mortalities = []
+		@killed_one = false
+		@saving_array = []
+		@last_piece_name = ""
+		@last_piece = ""
 	end
 
 	def play
-		while @turn < 5 # !@finished
+		while @turn < 50 # !@finished
+
+			if @turn == 1
+				File.open("chess_save_1.txt", "r") do |file|
+					file.readlines.each_with_index do |line, idx|
+					@piece_info[idx] = line.chomp.split(',')
+					end   
+				end
+				
+				puts ""
+				puts "Would you like to load a game? (y/n)"
+				puts ""
+				@load = gets.chomp
+				if @load == "y"
+					i = 0
+					while i < 64
+						@board[i].piece = @piece_info[i][0]
+						# if piece_info[i][1].length == 7
+							# @board[i].piece_name = piece_info[i][1][0..5]
+						# else
+							@board[i].piece_name = @piece_info[i][1]
+						# end
+						i += 1
+					end
+				end
+			end
+
+
 			show_board
-			# move("@white_rook2","up",7)
 			move_prompt
-			show_board
+			i = 0
+			somefile = File.open("chess_save.txt", "w")
+			while i < 64
+				# @saving_array[i] = [[@board[i].coordinates],@board[i].piece,@board[i].piece_name]
+				# @saving_array[i] = "#{@board[i].piece},#{@board[i].piece_name}"
+				somefile.puts "#{@board[i].piece},#{@board[i].piece_name}"
+				i += 1
+			end
+			somefile.close
+			# puts "white check: #{check?}"
+			# puts "black check: #{check?}"
+			# puts "@board.length: #{@board.length}"
 			@turn += 1
+			# puts "check?: #{check?}"
 		end
 	end
 
 	def move_prompt
 		player = 1 if @turn % 2 != 0
 		player = 2 if @turn % 2 == 0
-		@this_move_piece_name = "nothing"
-		@this_move_direction = ""
-		@this_move_distance = 9000
-		while !valid_move?(@this_move_piece_name,@this_move_direction,@this_move_distance)
+		mistake = 0
+		
+		while mistake == 0 || !valid_move?(@this_move_piece_name,@this_move_direction,@this_move_distance,player) || check?(@this_move_piece_name,@this_move_direction,@this_move_distance)
 			puts ""
 			puts "Player #{player}, which piece would you like to move?"
 			puts ""
@@ -219,162 +292,557 @@ class Game
 			puts "Player #{player}, how far would you like to travel #{@this_move_direction}?"
 			puts ""
 			@this_move_distance = gets.chomp.to_i
-			puts "@this_move_piece_name: #{@this_move_piece_name}"
-			puts "@this_move_direction: #{@this_move_direction}"
-			puts "@this_move_distance: #{@this_move_distance}"
+			mistake += 1
+			# puts "@this_move_piece_name: #{@this_move_piece_name}"
+			# puts "@this_move_direction: #{@this_move_direction}"
+			# puts "@this_move_distance: #{@this_move_distance}"
 		end
+		# puts "check: #{check?(@this_move_piece_name,@this_move_direction,@this_move_distance)}"
 		move(@this_move_piece_name,@this_move_direction,@this_move_distance)
 	end
 
-	def valid_move?(piece_name,direction,distance)
-		# puts "current coordinates: #{node_of(piece_name).coordinates}"
-		# puts "piece_name: #{piece_name}"
-		# puts "distance (in valid_move?): #{distance}"
-		# # puts "current coordinates[0] - distance: #{node_of(piece_name).coordinates[0] - distance}"
-		# puts "node_of(piece_name).up.piece_name: #{node_of(piece_name).up.piece}"
-		# puts "node_of(piece_name).up.piece_name == "": #{node_of(piece_name).up.piece_name == ""}"
-		if piece_name != "nothing"
-			@all_clear |= all_clear?(piece_name,direction,distance)
+
+	# def inspect
+	# 	"{node: #{value}, left: #{left.inspect}, right: #{right.inspect}}"
+	# end
+
+
+
+
+
+
+
+
+
+
+
+
+	def valid_move?(piece_name,direction,distance,player)
+		if (player == 1 && !@white_list.include?(piece_name)) || (player == 2 && !@black_list.include?(piece_name))
+			puts "INVALID PIECE SELECTION"
+			return false
 		end
+		
+		@all_clear = all_clear?(piece_name,direction,distance)
+		puts "@all_clear: #{@all_clear}"
+		piece = node_of(piece_name)
+		
+
 		if @pawn_list.include?(piece_name)
 			if @white_list.include?(piece_name)
-				if direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9 && @all_clear
+				if (direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9 && @all_clear) || 
+				   (direction == "ul" && !piece.up.left.nil? && @black_list.include?(piece.up.left.piece_name) && distance == 1) ||
+				   (direction == "ur" && !piece.up.right.nil? && @black_list.include?(piece.up.right.piece_name) && distance == 1)
 					return true
 				else
 					puts "INVALID MOVE"
 					return false
 				end
 			elsif @black_list.include?(piece_name)
-				if direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0 && @all_clear
+				if (direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0 && @all_clear) ||
+				   (direction == "dl" && !piece.down.left.nil? && @white_list.include?(piece.down.left.piece_name) && distance == 1) ||
+				   (direction == "dr" && !piece.down.right.nil? && @white_list.include?(piece.down.right.piece_name) && distance == 1)
 					return true
 				else 
 					puts "INVALID MOVE"
-					# puts "current coordinates[1]: #{node_of(piece_name).coordinates[1]}"
-					# puts "current coordinates[1] - distance: #{node_of(piece_name).coordinates[1] - distance}"
 					return false													
 				end
 			else
 				puts "INVALID MOVE"
 				return false	
 			end
+
+
 		elsif @rook_list.include?(piece_name)
 			if @white_list.include?(piece_name)
-				if direction == "u" || direction == "r" || direction == "d" || direction == "l"
+				if (direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9 && @all_clear) ||
+				   (direction == "r" && (node_of(piece_name).coordinates[1] + distance) < 9 && @all_clear) ||
+				   (direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0 && @all_clear) ||
+				   (direction == "l" && (node_of(piece_name).coordinates[1] - distance) > 0 && @all_clear)
 					return true
 				else
 					puts "INVALID MOVE"
 					return false
 				end
 			elsif @black_list.include?(piece_name)
-				if direction == "u" || direction == "r" || direction == "d" || direction == "l"
-					return true
+				if (direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9 && @all_clear) ||
+				   (direction == "r" && (node_of(piece_name).coordinates[1] + distance) < 9 && @all_clear) ||
+				   (direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0 && @all_clear) ||
+				   (direction == "l" && (node_of(piece_name).coordinates[1] - distance) > 0 && @all_clear)
+					 return true
 				else 
 					puts "INVALID MOVE"
 					return false													
 				end
 			else
 				puts "INVALID MOVE"
-				return false	
+				return false
+			end	
+			
+		elsif @bishop_list.include?(piece_name)
+			
+			if (direction == "ul" && (node_of(piece_name).coordinates[0] + distance) < 9 && (node_of(piece_name).coordinates[1] - distance) > 0 && @all_clear) ||
+			   (direction == "ur" && (node_of(piece_name).coordinates[0] + distance) < 9 && (node_of(piece_name).coordinates[1] + distance) < 9 && @all_clear) ||
+			   (direction == "dl" && (node_of(piece_name).coordinates[0] - distance) > 0 && (node_of(piece_name).coordinates[1] - distance) > 0 && @all_clear) ||
+			   (direction == "dr" && (node_of(piece_name).coordinates[0] - distance) > 0 && (node_of(piece_name).coordinates[1] + distance) < 9 && @all_clear)
+				return true
+			else
+				puts "INVALID MOVE"
+				return false
 			end
-		# elsif @bishop_list.include?(piece_name)
-		# 	if @white_list.include?(piece_name)
-		# 		if direction == "ul" || direction == "ur" || direction == "dl" || direction == "lr"
-		# 			return true
-		# 		else
-		# 			puts "INVALID MOVE"
-		# 			return false
-		# 		end
-		# 	elsif @black_list.include?(piece_name)
-		# 		if direction == "ul" || direction == "ur" || direction == "dl" || direction == "lr"
-		# 			return true
-		# 		else 
-		# 			puts "INVALID MOVE"
-		# 			return false													
-		# 		end
-		# 	else
-		# 		puts "INVALID MOVE"
-		# 		return false	
-		# 	end
-		# elsif @rook_list.include?(piece_name)
-		# 	if @white_list.include?(piece_name)
-		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
-		# 			return true
-		# 		else
-		# 			puts "INVALID MOVE"
-		# 			return false
-		# 		end
-		# 	elsif @black_list.include?(piece_name)
-		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
-		# 			return true
-		# 		else 
-		# 			puts "INVALID MOVE"
-		# 			return false													
-		# 		end
-		# 	else
-		# 		puts "INVALID MOVE"
-		# 		return false	
-		# 	end
-		# elsif @rook_list.include?(piece_name)
-		# 	if @white_list.include?(piece_name)
-		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
-		# 			return true
-		# 		else
-		# 			puts "INVALID MOVE"
-		# 			return false
-		# 		end
-		# 	elsif @black_list.include?(piece_name)
-		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
-		# 			return true
-		# 		else 
-		# 			puts "INVALID MOVE"
-		# 			return false													
-		# 		end
-		# 	else
-		# 		puts "INVALID MOVE"
-		# 		return false	
-		# 	end
-		# elsif @rook_list.include?(piece_name)
-		# 	if @white_list.include?(piece_name)
-		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
-		# 			return true
-		# 		else
-		# 			puts "INVALID MOVE"
-		# 			return false
-		# 		end
-		# 	elsif @black_list.include?(piece_name)
-		# 		if direction == "u" || direction == "r" || direction == "d" || direction == "l"
-		# 			return true
-		# 		else 
-		# 			puts "INVALID MOVE"
-		# 			return false													
-		# 		end
-		# 	else
-		# 		puts "INVALID MOVE"
-		# 		return false	
-		# 	end
-		
+
+		elsif @knight_list.include?(piece_name)
+			
+			if (direction == "kur" || direction == "kru" || direction == "krd" || direction == "kdr" || direction == "kdl" || direction == "kld" || direction == "klu" || direction == "kul") && @all_clear
+			   	return true
+			else
+				puts "INVALID MOVE"
+				return false
+			end
+
+		elsif @queen_list.include?(piece_name)
+			
+			if (direction == "u" || direction == "r" || direction == "d" || direction == "l" || direction == "ur" || direction == "dr" || direction == "dl" || direction == "ul") && @all_clear
+			   	return true
+			else
+				puts "INVALID MOVE"
+				return false
+			end
+			
+		elsif @king_list.include?(piece_name)
+			
+			if (direction == "u" || direction == "r" || direction == "d" || direction == "l" || direction == "ur" || direction == "dr" || direction == "dl" || direction == "ul") && @all_clear
+			   	return true
+			else
+				puts "INVALID MOVE"
+				return false
+			end
+			# puts "white check: #{check?("wp1 ",direction)}"
+			# puts "black check: #{check?("bp1 ",direction)}"
 		end
 	end
+
+	def check?(piece_name,direction,distance)
+		puts "checking..."
+		# puts "player: #{player}"
+		# piece_node = node_of(piece_name)
+		if piece_name == "nothing"
+			return false
+		end
+		
+		if @white_list.include?(piece_name)
+			# puts "player == 1"
+			king_node = node_of("wk ")
+			enemies = @black_list
+			friends = @white_list
+		else
+			king_node = node_of("bk ")
+			enemies = @white_list
+			friends = @black_list
+		end
+		current_node = king_node
+		old_node = node_of(piece_name)
+		old_node_piece = old_node.piece
+		puts "king_node.coordinates: #{king_node.coordinates}"
+		# puts "current_node.coordinates: #{current_node.coordinates}"
+		move(piece_name,direction,distance)
+		new_node = node_of(piece_name)
+
+		found = false
+		while !current_node.up.nil? && !found
+			puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.up
+			if current_node.piece_name != "empty "
+				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
+					old_node.piece = old_node_piece
+		old_node.piece_name = piece_name		
+		new_node.piece = @last_piece
+		new_node.piece_name = @last_piece_name
+		puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+		end
+		current_node = king_node
+		found = false
+		while !current_node.down.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.down
+			if current_node.piece_name != "empty "
+				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
+					old_node.piece = old_node_piece
+		old_node.piece_name = piece_name		
+		new_node.piece = @last_piece
+		new_node.piece_name = @last_piece_name
+		puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+		end
+		current_node = king_node
+		found = false
+		while !current_node.left.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.left
+			if current_node.piece_name != "empty "
+				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
+					old_node.piece = old_node_piece
+		old_node.piece_name = piece_name		
+		new_node.piece = @last_piece
+		new_node.piece_name = @last_piece_name
+		puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+		end
+		current_node = king_node
+		found = false
+		while !current_node.right.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.right
+			if current_node.piece_name != "empty "
+				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
+					old_node.piece = old_node_piece
+		old_node.piece_name = piece_name		
+		new_node.piece = @last_piece
+		new_node.piece_name = @last_piece_name
+		puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+		end
+
+		old_node.piece = old_node_piece
+		old_node.piece_name = piece_name		
+		new_node.piece = @last_piece
+		new_node.piece_name = @last_piece_name
+
+		return false
+	end
+
 
 	def all_clear?(piece_name,direction,distance)
 		current_node = node_of(piece_name)
 		spots = 0
 		while spots < distance
-			puts "current_node: #{current_node}"
-			puts "current_node.coordinates: #{current_node.coordinates}"
-			puts "current_node.piece_name: #{current_node.piece_name}"
+			
+			
 			if direction == "u"
-				current_node = current_node.up
+
+				# puts "all_clear before killed one check @killed_one: #{@killed_one}"
+				if !current_node.up.nil? && @killed_one == false
+					# puts "piece_name: #{piece_name}"
+					# puts "current_node.up.piece_name == empty: #{current_node.up.piece_name == "empty "}"
+					
+					if (@pawn_list.include?(piece_name) && current_node.up.piece_name == "empty ") ||
+						(!@pawn_list.include?(piece_name) && @white_list.include?(piece_name) && (@black_list.include?(current_node.up.piece_name) || current_node.up.piece_name == "empty ")) ||
+						(!@pawn_list.include?(piece_name) && @black_list.include?(piece_name) && (@white_list.include?(current_node.up.piece_name) || current_node.up.piece_name == "empty "))
+					
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.up.piece_name)) ||
+						   (@black_list.include?(piece_name) && @white_list.include?(current_node.up.piece_name))
+						   @killed_one = true
+						end
+						current_node = current_node.up
+					else
+						return false
+					end
+				else
+					# show_board
+					@killed_one = false
+					return false
+				end
 			end
+
 			if direction == "d"
-				current_node = current_node.down
+				
+				if !current_node.down.nil? && @killed_one == false
+					if (@pawn_list.include?(piece_name) && current_node.down.piece_name == "empty ") ||
+						(!@pawn_list.include?(piece_name) && @white_list.include?(piece_name) && (@black_list.include?(current_node.down.piece_name) || current_node.down.piece_name == "empty ")) ||
+						(!@pawn_list.include?(piece_name) && @black_list.include?(piece_name) && (@white_list.include?(current_node.down.piece_name) || current_node.down.piece_name == "empty "))
+
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.down.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.down.piece_name))
+							@killed_one = true
+						 end
+						current_node = current_node.down
+					else
+						return false
+					end
+				else
+					# show_board
+					@killed_one = false
+					return false
+				end
 			end
-			if current_node.piece_name != ""
-				show_board
-				return false
+
+			if direction == "l"
+				
+				if !current_node.left.nil? && @killed_one == false &&
+				   (@rook_list.include?(piece_name) || @queen_list.include?(piece_name) ||@king_list.include?(piece_name)) &&
+				   (@white_list.include?(piece_name) && (@black_list.include?(current_node.left.piece_name) || current_node.left.piece_name == "empty ")) ||
+				   (@black_list.include?(piece_name) && (@white_list.include?(current_node.left.piece_name) || current_node.left.piece_name == "empty "))
+
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.left.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.left.piece_name))
+							@killed_one = true
+						 end
+						current_node = current_node.left
+				else
+					@killed_one = false
+					return false
+				end
 			end
+
+			if direction == "r"
+				
+				if !current_node.right.nil? && @killed_one == false &&
+				   (@rook_list.include?(piece_name) || @queen_list.include?(piece_name) ||@king_list.include?(piece_name)) &&
+				   (@white_list.include?(piece_name) && (@black_list.include?(current_node.right.piece_name) || current_node.right.piece_name == "empty ")) ||
+				   (@black_list.include?(piece_name) && (@white_list.include?(current_node.right.piece_name) || current_node.right.piece_name == "empty "))
+
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.right.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.right.piece_name))
+							@killed_one = true
+						 end
+						current_node = current_node.right
+				else
+					@killed_one = false
+					return false
+				end
+			end
+
+			if direction == "ul"
+				
+				if !current_node.up.left.nil? && @killed_one == false &&
+				   (@bishop_list.include?(piece_name) || @queen_list.include?(piece_name) || @king_list.include?(piece_name)) &&
+				   (@white_list.include?(piece_name) && (@black_list.include?(current_node.up.left.piece_name) || current_node.up.left.piece_name == "empty ")) ||
+				   (@black_list.include?(piece_name) && (@white_list.include?(current_node.up.left.piece_name) || current_node.up.left.piece_name == "empty "))
+
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.up.left.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.up.left.piece_name))
+							@killed_one = true
+							puts "@killed_one: #{@killed_one}"
+						 end
+						current_node = current_node.up.left
+				else
+					@killed_one = false
+					return false
+				end
+			end
+
+			if direction == "ur"
+				
+				if !current_node.up.right.nil? && @killed_one == false &&
+				   (@bishop_list.include?(piece_name) || @queen_list.include?(piece_name) || @king_list.include?(piece_name)) &&
+				   (@white_list.include?(piece_name) && (@black_list.include?(current_node.up.right.piece_name) || current_node.up.right.piece_name == "empty ")) ||
+				   (@black_list.include?(piece_name) && (@white_list.include?(current_node.up.right.piece_name) || current_node.up.right.piece_name == "empty "))
+
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.up.right.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.up.right.piece_name))
+							@killed_one = true
+							puts "@killed_one: #{@killed_one}"
+						 end
+						current_node = current_node.up.right
+				else
+					@killed_one = false
+					return false
+				end
+			end
+
+			if direction == "dl"
+				
+				puts "@killed_one: #{@killed_one}"
+				if !current_node.down.left.nil? && @killed_one == false &&
+				   (@bishop_list.include?(piece_name) || @queen_list.include?(piece_name) || @king_list.include?(piece_name)) &&
+				   ((@white_list.include?(piece_name) && (@black_list.include?(current_node.down.left.piece_name) || current_node.down.left.piece_name == "empty ")) ||
+				   (@black_list.include?(piece_name) && (@white_list.include?(current_node.down.left.piece_name) || current_node.down.left.piece_name == "empty ")))
+				   puts "in forbidden loop!"
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.down.left.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.down.left.piece_name))
+							@killed_one = true
+						 end
+						current_node = current_node.down.left
+				else
+					@killed_one = false
+					puts "returning false"
+					return false
+				end
+			end
+
+			if direction == "dr"
+				
+				if !current_node.down.right.nil? && @killed_one == false &&
+				   (@bishop_list.include?(piece_name) || @queen_list.include?(piece_name) || @king_list.include?(piece_name)) &&
+				   ((@white_list.include?(piece_name) && (@black_list.include?(current_node.down.right.piece_name) || current_node.down.right.piece_name == "empty ")) ||
+				   (@black_list.include?(piece_name) && (@white_list.include?(current_node.down.right.piece_name) || current_node.down.right.piece_name == "empty ")))
+
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.down.right.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.down.right.piece_name))
+							@killed_one = true
+							puts "@killed_one: #{@killed_one}"
+						 end
+						current_node = current_node.down.right
+				else
+					@killed_one = false
+					return false
+				end
+			end
+
+			if direction == "kur"
+				
+				if !current_node.up.nil? && !current_node.up.up.nil? && !current_node.up.up.right.nil? &&
+					@knight_list.include?(piece_name) &&
+					((@white_list.include?(piece_name) && @black_list.include?(current_node.up.up.right.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.up.up.right.piece_name)) ||current_node.up.up.right.piece_name == "empty ")
+ 
+						 if (@white_list.include?(piece_name) && @black_list.include?(current_node.up.up.right.piece_name)) ||
+							 (@black_list.include?(piece_name) && @white_list.include?(current_node.up.up.right.piece_name))
+							 @killed_one = true
+							 puts "@killed_one: #{@killed_one}"
+						  end
+						 current_node = current_node.up.up.right
+				 else
+					 @killed_one = false
+					 return false
+				 end
+			end
+
+			if direction == "kru"
+				
+				if !current_node.right.nil? && !current_node.right.right.nil? && !current_node.right.right.up.nil? &&
+					@knight_list.include?(piece_name) &&
+					((@white_list.include?(piece_name) && @black_list.include?(current_node.right.right.up.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.right.right.up.piece_name)) ||current_node.right.right.up.piece_name == "empty ")
+ 
+						 if (@white_list.include?(piece_name) && @black_list.include?(current_node.right.right.up.piece_name)) ||
+							 (@black_list.include?(piece_name) && @white_list.include?(current_node.right.right.up.piece_name))
+							 @killed_one = true
+							 puts "@killed_one: #{@killed_one}"
+						  end
+						 current_node = current_node.right.right.up
+				 else
+					 @killed_one = false
+					 return false
+				 end
+			end
+
+			if direction == "krd"
+				# puts "@white_list.include?(piece_name): #{@white_list.include?(piece_name)}"
+				# puts "@black_list.include?(current_node.right.right.down.piece_name): #{@black_list.include?(current_node.right.right.down.piece_name)}"
+				# puts "current_node.right.right.down.piece_name == "empty ": #{current_node.right.right.down.piece_name == "empty "}"
+				# puts "entry: #{@knight_list.include?(piece_name) && ((@white_list.include?(piece_name) && @black_list.include?(current_node.right.right.down.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.right.right.down.piece_name)) ||current_node.right.right.down.piece_name == "empty ")}"
+				
+				if !current_node.right.nil? && !current_node.right.right.nil? && !current_node.right.right.down.nil? &&
+				   @knight_list.include?(piece_name) &&
+				   ((@white_list.include?(piece_name) && @black_list.include?(current_node.right.right.down.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.right.right.down.piece_name)) ||current_node.right.right.down.piece_name == "empty ")
+
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.right.right.down.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.right.right.down.piece_name))
+							@killed_one = true
+							puts "@killed_one: #{@killed_one}"
+						 end
+						current_node = current_node.right.right.down
+				else
+					@killed_one = false
+					return false
+				end
+			end
+
+			if direction == "kdr"
+				
+				if !current_node.down.nil? && !current_node.down.down.nil? && !current_node.down.down.right.nil? &&
+					@knight_list.include?(piece_name) &&
+					((@white_list.include?(piece_name) && @black_list.include?(current_node.down.down.right.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.down.down.right.piece_name)) ||current_node.down.down.right.piece_name == "empty ")
+ 
+						 if (@white_list.include?(piece_name) && @black_list.include?(current_node.down.down.right.piece_name)) ||
+							 (@black_list.include?(piece_name) && @white_list.include?(current_node.down.down.right.piece_name))
+							 @killed_one = true
+							 puts "@killed_one: #{@killed_one}"
+						  end
+						 current_node = current_node.down.down.right
+				 else
+					 @killed_one = false
+					 return false
+				 end
+			end
+
+			if direction == "kdl"
+				
+				if !current_node.down.nil? && !current_node.down.down.nil? && !current_node.down.down.left.nil? &&
+					@knight_list.include?(piece_name) &&
+					((@white_list.include?(piece_name) && @black_list.include?(current_node.down.down.left.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.down.down.left.piece_name)) ||current_node.down.down.left.piece_name == "empty ")
+ 
+						 if (@white_list.include?(piece_name) && @black_list.include?(current_node.down.down.left.piece_name)) ||
+							 (@black_list.include?(piece_name) && @white_list.include?(current_node.down.down.left.piece_name))
+							 @killed_one = true
+							 puts "@killed_one: #{@killed_one}"
+						  end
+						 current_node = current_node.down.down.left
+				 else
+					 @killed_one = false
+					 return false
+				 end
+			end
+
+			if direction == "kld"
+				
+				if !current_node.left.nil? && !current_node.left.left.nil? && !current_node.left.left.down.nil? &&
+				   @knight_list.include?(piece_name) &&
+				   ((@white_list.include?(piece_name) && @black_list.include?(current_node.left.left.down.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.left.left.down.piece_name)) ||current_node.left.left.down.piece_name == "empty ")
+
+						if (@white_list.include?(piece_name) && @black_list.include?(current_node.left.left.down.piece_name)) ||
+							(@black_list.include?(piece_name) && @white_list.include?(current_node.left.left.down.piece_name))
+							@killed_one = true
+							puts "@killed_one: #{@killed_one}"
+						 end
+						current_node = current_node.left.left.down
+				else
+					@killed_one = false
+					return false
+				end
+			end
+
+			if direction == "klu"
+				
+				if !current_node.left.nil? && !current_node.left.left.nil? && !current_node.left.left.up.nil? &&
+					@knight_list.include?(piece_name) &&
+					((@white_list.include?(piece_name) && @black_list.include?(current_node.left.left.up.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.left.left.up.piece_name)) ||current_node.left.left.up.piece_name == "empty ")
+ 
+						 if (@white_list.include?(piece_name) && @black_list.include?(current_node.left.left.up.piece_name)) ||
+							 (@black_list.include?(piece_name) && @white_list.include?(current_node.left.left.up.piece_name))
+							 @killed_one = true
+							 puts "@killed_one: #{@killed_one}"
+						  end
+						 current_node = current_node.left.left.up
+				 else
+					 @killed_one = false
+					 return false
+				 end
+			end
+
+			if direction == "kul"
+				
+				if !current_node.up.nil? && !current_node.up.up.nil? && !current_node.up.up.left.nil? &&
+					@knight_list.include?(piece_name) &&
+					((@white_list.include?(piece_name) && @black_list.include?(current_node.up.up.left.piece_name)) || (@black_list.include?(piece_name) && @white_list.include?(current_node.up.up.left.piece_name)) ||current_node.up.up.left.piece_name == "empty ")
+ 
+						 if (@white_list.include?(piece_name) && @black_list.include?(current_node.up.up.left.piece_name)) ||
+							 (@black_list.include?(piece_name) && @white_list.include?(current_node.up.up.left.piece_name))
+							 @killed_one = true
+							 puts "@killed_one: #{@killed_one}"
+						  end
+						 current_node = current_node.up.up.left
+				 else
+					 @killed_one = false
+					 return false
+				 end
+			end
+			
 			spots += 1
 		end
+		@killed_one = false
 		return true
 	end
 
@@ -391,45 +859,32 @@ class Game
 			move_down(piece_name,distance)
 		elsif direction == "l"
 			move_left(piece_name,distance)
+		elsif direction == "ul"
+			move_up_left(piece_name,distance)
+		elsif direction == "ur"
+			move_up_right(piece_name,distance)
+		elsif direction == "dl"
+			move_down_left(piece_name,distance)
+		elsif direction == "dr"
+			move_down_right(piece_name,distance)
+		elsif direction == "kur"
+			move_knight_up_right(piece_name,distance)
+		elsif direction == "klu"
+			move_knight_left_up(piece_name,distance)
+		elsif direction == "kld"
+			move_knight_left_down(piece_name,distance)
+		elsif direction == "kdr"
+			move_knight_down_right(piece_name,distance)
+		elsif direction == "kdl"
+			move_knight_down_left(piece_name,distance)
+		elsif direction == "krd"
+			move_knight_right_down(piece_name,distance)
+		elsif direction == "kru"
+			move_knight_right_up(piece_name,distance)
+		elsif direction == "kul"
+			move_knight_up_left(piece_name,distance)
 		end
 			
-
-		# elsif piece_name.include?("king") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# elsif piece_name.include?("queen") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# elsif piece_name.include?("rook") && piece_name.include?("white")
-		# 	if direction == "up"
-		# 		move_up(piece_name,distance)
-		# 	elsif direction == "right"
-		# 		move_right(piece_name,distance)
-		# 	elsif direction == "donw"
-		# 		move_down(piece_name,distance)
-		# 	elsif direction == "left"
-		# 		move_left(piece_name,distance)
-		# 	else
-		# 		puts "woops"
-		# 	end
-		# elsif piece_name.include?("bishop") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# elsif piece_name.include?("knight") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# elsif piece_name.include?("pawn") && piece_name.include?("white")
-			# move_up(piece_name,distance)
-		# elsif piece_name.include?("rook") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# elsif piece_name.include?("rook") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# elsif piece_name.include?("rook") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# elsif piece_name.include?("rook") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# elsif piece_name.include?("rook") && piece_name.include?("white")
-		# 	move_up(piece_name,distance)
-		# else
-		# 	return "woops"
-		# end # long else if for piece categorizing
-
 
 	end # move(piece,destination)
 
@@ -441,9 +896,18 @@ class Game
 			# puts "current_node.piece_name: #{current_node.piece_name}"
 			# puts "current_node.piece: #{current_node.piece}"
 			# puts "current_node: #{current_node}"
+			if @white_list.include?(current_node.up.piece_name)
+				@white_mortalities.push("#{current_node.up.piece}#{current_node.up.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.up.piece_name)
+				@black_mortalities.push("#{current_node.up.piece}#{current_node.up.piece_name[-1]}")
+			end
+			@last_piece_name = current_node.up.piece_name
+			@last_piece = current_node.up.piece
 			current_node.up.piece_name = piece_name
 			current_node.up.piece = current_node.piece
-			current_node.piece_name = ""
+			current_node.piece_name = "empty "
 			current_node.piece = " "
 			current_node = current_node.up
 			spots += 1
@@ -458,9 +922,18 @@ class Game
 			# puts "current_node.piece_name: #{current_node.piece_name}"
 			# puts "current_node.piece: #{current_node.piece}"
 			# puts "current_node: #{current_node}"
+			if @white_list.include?(current_node.right.piece_name)
+				@white_mortalities.push("#{current_node.right.piece}#{current_node.right.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.right.piece_name)
+				@black_mortalities.push("#{current_node.right.piece}#{current_node.right.piece_name[-1]}")
+			end
+			@last_piece_name = current_node.right.piece_name
+			@last_piece = current_node.right.piece
 			current_node.right.piece_name = piece_name
 			current_node.right.piece = current_node.piece
-			current_node.piece_name = ""
+			current_node.piece_name = "empty "
 			current_node.piece = " "
 			current_node = current_node.right
 			spots += 1
@@ -475,9 +948,18 @@ class Game
 			# puts "current_node.piece_name: #{current_node.piece_name}"
 			# puts "current_node.piece: #{current_node.piece}"
 			# puts "current_node: #{current_node}"
+			if @white_list.include?(current_node.down.piece_name)
+				@white_mortalities.push("#{current_node.down.piece}#{current_node.down.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.down.piece_name)
+				@black_mortalities.push("#{current_node.down.piece}#{current_node.down.piece_name[-1]}")
+			end
+			@last_piece_name = current_node.down.piece_name
+			@last_piece = current_node.down.piece
 			current_node.down.piece_name = piece_name
 			current_node.down.piece = current_node.piece
-			current_node.piece_name = ""
+			current_node.piece_name = "empty "
 			current_node.piece = " "
 			current_node = current_node.down
 			spots += 1
@@ -492,14 +974,332 @@ class Game
 			# puts "current_node.piece_name: #{current_node.piece_name}"
 			# puts "current_node.piece: #{current_node.piece}"
 			# puts "current_node: #{current_node}"
+			if @white_list.include?(current_node.left.piece_name)
+				@white_mortalities.push("#{current_node.left.piece}#{current_node.left.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.left.piece_name)
+				@black_mortalities.push("#{current_node.left.piece}#{current_node.left.piece_name[-1]}")
+			end
+			@last_piece_name = current_node.left.piece_name
+			@last_piece = current_node.left.piece
 			current_node.left.piece_name = piece_name
 			current_node.left.piece = current_node.piece
-			current_node.piece_name = ""
+			current_node.piece_name = "empty "
 			current_node.piece = " "
 			current_node = current_node.left
 			spots += 1
 		end # while current_node.coordinates != destination
 	end # def move_up(piece_name,distance)
+
+	def move_up_left(piece_name,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		while spots < distance
+			# puts "current_node.coordinates: #{current_node.coordinates}"
+			# puts "current_node.piece_name: #{current_node.piece_name}"
+			# puts "current_node.piece: #{current_node.piece}"
+			# puts "current_node: #{current_node}"
+			if @white_list.include?(current_node.up.left.piece_name)
+				@white_mortalities.push("#{current_node.up.left.piece}#{current_node.up.left.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.up.left.piece_name)
+				@black_mortalities.push("#{current_node.up.left.piece}#{current_node.up.left.piece_name[-1]}")
+			end
+			@last_piece_name = current_node.up.left.piece_name
+			@last_piece = current_node.up.left.piece
+			current_node.up.left.piece_name = piece_name
+			current_node.up.left.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.up.left
+			spots += 1
+		end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_up_right(piece_name,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		while spots < distance
+			# puts "current_node.coordinates: #{current_node.coordinates}"
+			# puts "current_node.piece_name: #{current_node.piece_name}"
+			# puts "current_node.piece: #{current_node.piece}"
+			# puts "current_node: #{current_node}"
+			if @white_list.include?(current_node.up.right.piece_name)
+				@white_mortalities.push("#{current_node.up.right.piece}#{current_node.up.right.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.up.right.piece_name)
+				@black_mortalities.push("#{current_node.up.right.piece}#{current_node.up.right.piece_name[-1]}")
+			end
+			@last_piece_name = current_node.up.right.piece_name
+			@last_piece = current_node.up.right.piece
+			current_node.up.right.piece_name = piece_name
+			current_node.up.right.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.up.right
+			spots += 1
+		end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_down_left(piece_name,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		while spots < distance
+			# puts "current_node.coordinates: #{current_node.coordinates}"
+			# puts "current_node.piece_name: #{current_node.piece_name}"
+			# puts "current_node.piece: #{current_node.piece}"
+			# puts "current_node: #{current_node}"
+			if @white_list.include?(current_node.down.left.piece_name)
+				@white_mortalities.push("#{current_node.down.left.piece}#{current_node.down.left.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.down.left.piece_name)
+				@black_mortalities.push("#{current_node.down.left.piece}#{current_node.down.left.piece_name[-1]}")
+			end
+			@last_piece_name = current_node.down.left.piece_name
+			@last_piece = current_node.down.left.piece
+			current_node.down.left.piece_name = piece_name
+			current_node.down.left.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.down.left
+			spots += 1
+		end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+
+	def move_down_right(piece_name,distance)
+		current_node = node_of(piece_name)
+		spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		while spots < distance
+			if @white_list.include?(current_node.down.right.piece_name)
+				@white_mortalities.push("#{current_node.down.right.piece}#{current_node.down.right.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.down.right.piece_name)
+				@black_mortalities.push("#{current_node.down.right.piece}#{current_node.down.right.piece_name[-1]}")
+			end
+			@last_piece_name = current_node.down.right.piece_name
+			@last_piece = current_node.down.right.piece
+			current_node.down.right.piece_name = piece_name
+			current_node.down.right.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.down.right
+			spots += 1
+		end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_knight_up_right(piece_name,distance)
+		current_node = node_of(piece_name)
+		# spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		# while spots < distance
+			if @white_list.include?(current_node.up.up.right.piece_name)
+				@white_mortalities.push("#{current_node.up.up.right.piece}#{current_node.up.up.right.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.up.up.right.piece_name)
+				@black_mortalities.push("#{current_node.up.up.right.piece}#{current_node.up.up.right.piece_name[-1]}")
+			end
+
+			current_node.up.up.right.piece_name = piece_name
+			current_node.up.up.right.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.up.up.right
+			
+		# end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_knight_right_up(piece_name,distance)
+		current_node = node_of(piece_name)
+		# spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		# while spots < distance
+			if @white_list.include?(current_node.right.right.up.piece_name)
+				@white_mortalities.push("#{current_node.right.right.up.piece}#{current_node.right.right.up.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.right.right.up.piece_name)
+				@black_mortalities.push("#{current_node.right.right.up.piece}#{current_node.right.right.up.piece_name[-1]}")
+			end
+
+			current_node.right.right.up.piece_name = piece_name
+			current_node.right.right.up.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.right.right.up
+			
+		# end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_knight_right_down(piece_name,distance)
+		current_node = node_of(piece_name)
+		# spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		# while spots < distance
+			if @white_list.include?(current_node.right.right.down.piece_name)
+				@white_mortalities.push("#{current_node.right.right.down.piece}#{current_node.right.right.down.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.right.right.down.piece_name)
+				@black_mortalities.push("#{current_node.right.right.down.piece}#{current_node.right.right.down.piece_name[-1]}")
+			end
+
+			current_node.right.right.down.piece_name = piece_name
+			current_node.right.right.down.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.right.right.down
+			
+		# end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_knight_down_right(piece_name,distance)
+		current_node = node_of(piece_name)
+		# spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		# while spots < distance
+			if @white_list.include?(current_node.down.down.right.piece_name)
+				@white_mortalities.push("#{current_node.down.down.right.piece}#{current_node.down.down.right.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.down.down.right.piece_name)
+				@black_mortalities.push("#{current_node.down.down.right.piece}#{current_node.down.down.right.piece_name[-1]}")
+			end
+
+			current_node.down.down.right.piece_name = piece_name
+			current_node.down.down.right.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.down.down.right
+			
+		# end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_knight_down_left(piece_name,distance)
+		current_node = node_of(piece_name)
+		# spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		# while spots < distance
+			if @white_list.include?(current_node.down.down.left.piece_name)
+				@white_mortalities.push("#{current_node.down.down.left.piece}#{current_node.down.down.left.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.down.down.left.piece_name)
+				@black_mortalities.push("#{current_node.down.down.left.piece}#{current_node.down.down.left.piece_name[-1]}")
+			end
+
+			current_node.down.down.left.piece_name = piece_name
+			current_node.down.down.left.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.down.down.left
+			
+		# end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_knight_left_down(piece_name,distance)
+		current_node = node_of(piece_name)
+		# spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		# while spots < distance
+			if @white_list.include?(current_node.left.left.down.piece_name)
+				@white_mortalities.push("#{current_node.left.left.down.piece}#{current_node.left.left.down.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.left.left.down.piece_name)
+				@black_mortalities.push("#{current_node.left.left.down.piece}#{current_node.left.left.down.piece_name[-1]}")
+			end
+
+			current_node.left.left.down.piece_name = piece_name
+			current_node.left.left.down.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.left.left.down
+			
+		# end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_knight_left_up(piece_name,distance)
+		current_node = node_of(piece_name)
+		# spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		# while spots < distance
+			if @white_list.include?(current_node.left.left.up.piece_name)
+				@white_mortalities.push("#{current_node.left.left.up.piece}#{current_node.left.left.up.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.left.left.up.piece_name)
+				@black_mortalities.push("#{current_node.left.left.up.piece}#{current_node.left.left.up.piece_name[-1]}")
+			end
+
+			current_node.left.left.up.piece_name = piece_name
+			current_node.left.left.up.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.left.left.up
+			
+		# end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+	def move_knight_up_left(piece_name,distance)
+		current_node = node_of(piece_name)
+		# spots = 0
+		# puts "move_ down_right current_node.coordinates: #{current_node.coordinates}"
+		# puts "move_ down_right current_node.piece_name: #{current_node.piece_name}"
+		# puts "move_ down_right current_node.piece.down.right.coordinates: #{current_node.down.right.coordinates}"
+		# puts "move_ down_right current_node.piece.down.right.piece_name: #{current_node.down.right.piece_name}"
+		# while spots < distance
+			if @white_list.include?(current_node.up.up.left.piece_name)
+				@white_mortalities.push("#{current_node.up.up.left.piece}#{current_node.up.up.left.piece_name[-1]}")
+			end
+
+			if @black_list.include?(current_node.up.up.left.piece_name)
+				@black_mortalities.push("#{current_node.up.up.left.piece}#{current_node.up.up.left.piece_name[-1]}")
+			end
+
+			current_node.up.up.left.piece_name = piece_name
+			current_node.up.up.left.piece = current_node.piece
+			current_node.piece_name = "empty "
+			current_node.piece = " "
+			current_node = current_node.up.up.left
+			
+		# end # while current_node.coordinates != destination
+	end # def move_up(piece_name,distance)
+
+
+	
+
 
 	def node_of(piece_name)
 		i = 0
@@ -525,7 +1325,7 @@ class Game
 	def show_board
 	puts "_________________________________________"
 	puts ""
-	puts "| #{node_at([8,1]).piece.encode('utf-8')}#{node_at([8,1]).piece_name[-1]} | #{node_at([8,2]).piece.encode('utf-8')}#{node_at([8,2]).piece_name[-1]} | #{node_at([8,3]).piece.encode('utf-8')}#{node_at([8,3]).piece_name[-1]} | #{node_at([8,4]).piece.encode('utf-8')}#{node_at([8,4]).piece_name[-1]} | #{node_at([8,5]).piece.encode('utf-8')}#{node_at([8,5]).piece_name[-1]} | #{node_at([8,6]).piece.encode('utf-8')}#{node_at([8,6]).piece_name[-1]} | #{node_at([8,7]).piece.encode('utf-8')}#{node_at([8,7]).piece_name[-1]} | #{node_at([8,8]).piece.encode('utf-8')}#{node_at([8,8]).piece_name[-1]} |"
+	puts "| #{node_at([8,1]).piece.encode('utf-8')}#{node_at([8,1]).piece_name[-1]} | #{node_at([8,2]).piece.encode('utf-8')}#{node_at([8,2]).piece_name[-1]} | #{node_at([8,3]).piece.encode('utf-8')}#{node_at([8,3]).piece_name[-1]} | #{node_at([8,4]).piece.encode('utf-8')}#{node_at([8,4]).piece_name[-1]} | #{node_at([8,5]).piece.encode('utf-8')}#{node_at([8,5]).piece_name[-1]} | #{node_at([8,6]).piece.encode('utf-8')}#{node_at([8,6]).piece_name[-1]} | #{node_at([8,7]).piece.encode('utf-8')}#{node_at([8,7]).piece_name[-1]} | #{node_at([8,8]).piece.encode('utf-8')}#{node_at([8,8]).piece_name[-1]} |           black mortalities: #{@black_mortalities}"
 	puts "_________________________________________"
 	puts ""
 	puts "| #{node_at([7,1]).piece.encode('utf-8')}#{node_at([7,1]).piece_name[-1]} | #{node_at([7,2]).piece.encode('utf-8')}#{node_at([7,2]).piece_name[-1]} | #{node_at([7,3]).piece.encode('utf-8')}#{node_at([7,3]).piece_name[-1]} | #{node_at([7,4]).piece.encode('utf-8')}#{node_at([7,4]).piece_name[-1]} | #{node_at([7,5]).piece.encode('utf-8')}#{node_at([7,5]).piece_name[-1]} | #{node_at([7,6]).piece.encode('utf-8')}#{node_at([7,6]).piece_name[-1]} | #{node_at([7,7]).piece.encode('utf-8')}#{node_at([7,7]).piece_name[-1]} | #{node_at([7,8]).piece.encode('utf-8')}#{node_at([7,8]).piece_name[-1]} |"
@@ -546,7 +1346,7 @@ class Game
 	puts "| #{node_at([2,1]).piece.encode('utf-8')}#{node_at([2,1]).piece_name[-1]} | #{node_at([2,2]).piece.encode('utf-8')}#{node_at([2,2]).piece_name[-1]} | #{node_at([2,3]).piece.encode('utf-8')}#{node_at([2,3]).piece_name[-1]} | #{node_at([2,4]).piece.encode('utf-8')}#{node_at([2,4]).piece_name[-1]} | #{node_at([2,5]).piece.encode('utf-8')}#{node_at([2,5]).piece_name[-1]} | #{node_at([2,6]).piece.encode('utf-8')}#{node_at([2,6]).piece_name[-1]} | #{node_at([2,7]).piece.encode('utf-8')}#{node_at([2,7]).piece_name[-1]} | #{node_at([2,8]).piece.encode('utf-8')}#{node_at([2,8]).piece_name[-1]} |"
 	puts "_________________________________________"
 	puts ""
-	puts "| #{node_at([1,1]).piece.encode('utf-8')}#{node_at([1,1]).piece_name[-1]} | #{node_at([1,2]).piece.encode('utf-8')}#{node_at([1,2]).piece_name[-1]} | #{node_at([1,3]).piece.encode('utf-8')}#{node_at([1,3]).piece_name[-1]} | #{node_at([1,4]).piece.encode('utf-8')}#{node_at([1,4]).piece_name[-1]} | #{node_at([1,5]).piece.encode('utf-8')}#{node_at([1,5]).piece_name[-1]} | #{node_at([1,6]).piece.encode('utf-8')}#{node_at([1,6]).piece_name[-1]} | #{node_at([1,7]).piece.encode('utf-8')}#{node_at([1,7]).piece_name[-1]} | #{node_at([1,8]).piece.encode('utf-8')}#{node_at([1,8]).piece_name[-1]} |"
+	puts "| #{node_at([1,1]).piece.encode('utf-8')}#{node_at([1,1]).piece_name[-1]} | #{node_at([1,2]).piece.encode('utf-8')}#{node_at([1,2]).piece_name[-1]} | #{node_at([1,3]).piece.encode('utf-8')}#{node_at([1,3]).piece_name[-1]} | #{node_at([1,4]).piece.encode('utf-8')}#{node_at([1,4]).piece_name[-1]} | #{node_at([1,5]).piece.encode('utf-8')}#{node_at([1,5]).piece_name[-1]} | #{node_at([1,6]).piece.encode('utf-8')}#{node_at([1,6]).piece_name[-1]} | #{node_at([1,7]).piece.encode('utf-8')}#{node_at([1,7]).piece_name[-1]} | #{node_at([1,8]).piece.encode('utf-8')}#{node_at([1,8]).piece_name[-1]} |           white mortalities: #{@white_mortalities}"
 	puts "_________________________________________"
 	puts ""
 	end # show_board
@@ -555,11 +1355,6 @@ end #class Game
 game = Game.new
 game.play
 
-# make valid move rules for each piece
-
-	# add collision detection
-
-	# add check to see if piece is still alive
 
 # make all directions for all pieces
 
