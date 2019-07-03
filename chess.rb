@@ -224,13 +224,14 @@ class Game
 		@saving_array = []
 		@last_piece_name = ""
 		@last_piece = ""
+		@done_moving = false
 	end
 
 	def play
 		while @turn < 50 # !@finished
 
 			if @turn == 1
-				File.open("chess_save_1.txt", "r") do |file|
+				File.open("chess_save_bishop.txt", "r") do |file|
 					file.readlines.each_with_index do |line, idx|
 					@piece_info[idx] = line.chomp.split(',')
 					end   
@@ -266,10 +267,17 @@ class Game
 				i += 1
 			end
 			somefile.close
-			# puts "white check: #{check?}"
-			# puts "black check: #{check?}"
-			# puts "@board.length: #{@board.length}"
 			@turn += 1
+
+			player = 1 if @turn % 2 != 0
+			player = 2 if @turn % 2 == 0
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			puts "player #{player} is in checkmate: #{checkmate?}"
 			# puts "check?: #{check?}"
 		end
 	end
@@ -277,9 +285,10 @@ class Game
 	def move_prompt
 		player = 1 if @turn % 2 != 0
 		player = 2 if @turn % 2 == 0
-		mistake = 0
+		@mistake = 0
+		@done_moving = false
 		
-		while mistake == 0 || !valid_move?(@this_move_piece_name,@this_move_direction,@this_move_distance,player) || check?(@this_move_piece_name,@this_move_direction,@this_move_distance)
+		while @mistake == 0 || !valid_move?(@this_move_piece_name,@this_move_direction,@this_move_distance,player) || check?
 			puts ""
 			puts "Player #{player}, which piece would you like to move?"
 			puts ""
@@ -292,22 +301,665 @@ class Game
 			puts "Player #{player}, how far would you like to travel #{@this_move_direction}?"
 			puts ""
 			@this_move_distance = gets.chomp.to_i
-			mistake += 1
+			@mistake += 1
 			# puts "@this_move_piece_name: #{@this_move_piece_name}"
 			# puts "@this_move_direction: #{@this_move_direction}"
 			# puts "@this_move_distance: #{@this_move_distance}"
 		end
 		# puts "check: #{check?(@this_move_piece_name,@this_move_direction,@this_move_distance)}"
 		move(@this_move_piece_name,@this_move_direction,@this_move_distance)
+		@done_moving = true
 	end
+	
+	def checkmate?
+		player = 1 if @turn % 2 != 0
+		player = 2 if @turn % 2 == 0
+		old_piece_name = ""
+		old_piece = ""
+		original_item_piece_name = ""
+		original_item_piece = ""
+		killed = false
+
+		if player == 1
+			king = "wk "
+			enemies = @black_list
+			friends = @white_list
+		else
+			king = "bk "
+			enemies = @white_list
+			friends = @black_list
+		end
+		
+		
+		if !check?
+			return false
+		else
+			found = false
+			# current_node = node_of("wr1")
+			@board.each do |item|
+				if (player == 1 && @white_list.include?(item.piece_name)) || (player == 2 && @black_list.include?(item.piece_name))
+					current_node = item
+					original_item_piece_name = item.piece_name
+					original_item_piece = item.piece
+					# move that piece in all possible ways
+
+					if @rook_list.include?(item.piece_name) || @queen_list.include?(item.piece_name)
+						puts "in while checkmate rook loop... item.piece_name: #{item.piece_name}"
+						puts "in while checkmate rook loop... item.coordinates: #{item.coordinates}"
+						current_node.piece_name = "empty "
+						current_node.piece = " "
+						while !current_node.up.nil? && (current_node.up.piece_name == "empty " || enemies.include?(current_node.up.piece_name)) && killed == false
+							puts "in while checkmate rook up loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.up
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end
+						item.piece_name = original_item_piece_name
+						item.piece = original_item_piece
+						current_node.piece_name = old_piece_name
+						current_node.piece = old_piece
+						current_node = item
+
+						while !current_node.down.nil? && (current_node.down.piece_name == "empty " || enemies.include?(current_node.down.piece_name)) && killed == false
+							puts "in while checkmate rook down loop... item.coordinates: #{current_node.coordinates}"
+							# current_node.piece_name = "empty "
+							# current_node.piece = " "
+							current_node = current_node.down
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end
+						current_node.piece_name = old_piece_name
+						current_node.piece = old_piece
+						item.piece_name = original_item_piece_name
+						item.piece = original_item_piece
+
+						current_node = item
+						while !current_node.left.nil? && (current_node.left.piece_name == "empty " || enemies.include?(current_node.left.piece_name)) && killed == false
+							puts "in while checkmate rook left loop... item.coordinates: #{current_node.coordinates}"
+							# current_node.piece_name = "empty "
+							# current_node.piece = " "
+							current_node = current_node.left
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end
+						current_node.piece_name = old_piece_name
+						current_node.piece = old_piece
+						item.piece_name = original_item_piece_name
+						item.piece = original_item_piece
+
+						current_node = item
+						while !current_node.right.nil? && (current_node.right.piece_name == "empty " || enemies.include?(current_node.right.piece_name)) && killed == false
+							puts "in while checkmate rook right loop... item.coordinates: #{current_node.coordinates}"
+							# current_node.piece_name = "empty "
+							# current_node.piece = " "
+							current_node = current_node.right
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end
+						current_node.piece_name = old_piece_name
+						current_node.piece = old_piece
+						item.piece_name = original_item_piece_name
+						item.piece = original_item_piece
+
+						
+
+					end # if rook or queen
+
+					# if @bishop_list.include?(item.piece_name) || @queen_list.include?(item.piece_name)
+
+					# 	puts "in while checkmate bishop loop... item.piece_name: #{item.piece_name}"
+					# 	puts "in while checkmate bishop loop... item.coordinates: #{item.coordinates}"
+					# 	current_node = item
+					# 	while !current_node.up.right.nil? && all_clear?(current_node.piece_name,"ur",1)
+					# 		puts "in while checkmate loop... item.coordinates: #{item.coordinates}"
+					# 		current_node = current_node.up.right
+					# 		old_piece_name = current_node.piece_name
+					# 		old_piece = current_node.piece
+					# 		current_node.piece_name = original_item_piece_name
+					# 		if !check?
+					# 			current_node.piece_name = old_piece_name
+					# 			current_node.piece = old_piece
+					# 			item.piece_name = original_item_piece_name
+					# 			item.piece = original_item_piece
+					# 			return false
+					# 		end
+					# 		current_node.piece_name = old_piece_name
+					# 		current_node.piece = old_piece
+					# 		item.piece_name = original_item_piece_name
+					# 		item.piece = original_item_piece
+					# 	end
+					# 	current_node = item
+					# 	while !current_node.up.left.nil? && all_clear?(current_node.piece_name,"ul",1)
+					# 		puts "in while checkmate loop... item.coordinates: #{item.coordinates}"
+					# 		current_node = current_node.up.left
+					# 		old_piece_name = current_node.piece_name
+					# 		old_piece = current_node.piece
+					# 		current_node.piece_name = original_item_piece_name
+					# 		if !check?
+					# 			current_node.piece_name = old_piece_name
+					# 			current_node.piece = old_piece
+					# 			item.piece_name = original_item_piece_name
+					# 			item.piece = original_item_piece
+					# 			return false
+					# 		end
+					# 		current_node.piece_name = old_piece_name
+					# 		current_node.piece = old_piece
+					# 		item.piece_name = original_item_piece_name
+					# 		item.piece = original_item_piece
+					# 	end
+					# 	current_node = item
+					# 	while !current_node.down.right.nil? && all_clear?(current_node.piece_name,"dr",1)
+					# 		puts "in while checkmate loop... item.coordinates: #{item.coordinates}"
+					# 		current_node = current_node.down.right
+					# 		old_piece_name = current_node.piece_name
+					# 		old_piece = current_node.piece
+					# 		current_node.piece_name = original_item_piece_name
+					# 		if !check?
+					# 			current_node.piece_name = old_piece_name
+					# 			current_node.piece = old_piece
+					# 			item.piece_name = original_item_piece_name
+					# 			item.piece = original_item_piece
+					# 			return false
+					# 		end
+					# 		current_node.piece_name = old_piece_name
+					# 		current_node.piece = old_piece
+					# 		item.piece_name = original_item_piece_name
+					# 		item.piece = original_item_piece
+					# 	end
+					# 	current_node = item
+					# 	while !current_node.down.left.nil? && all_clear?(current_node.piece_name,"dl",1)
+					# 		puts "in while checkmate loop... item.coordinates: #{item.coordinates}"
+					# 		current_node = current_node.down.left
+					# 		old_piece_name = current_node.piece_name
+					# 		old_piece = current_node.piece
+					# 		current_node.piece_name = original_item_piece_name
+					# 		if !check?
+					# 			current_node.piece_name = old_piece_name
+					# 			current_node.piece = old_piece
+					# 			item.piece_name = original_item_piece_name
+					# 			item.piece = original_item_piece
+					# 			return false
+					# 		end
+					# 		current_node.piece_name = old_piece_name
+					# 		current_node.piece = old_piece
+					# 		item.piece_name = original_item_piece_name
+					# 		item.piece = original_item_piece
+					# 	end
+
+					
+					# end # if bishop or queen
 
 
-	# def inspect
-	# 	"{node: #{value}, left: #{left.inspect}, right: #{right.inspect}}"
-	# end
+				end
+			end
+		end
+		return true
+	end
+	
+	
+	def check?
+		# puts "checking..."
+		# puts "in check?... @this_move_piece_name: #{@this_move_piece_name}"
+		# puts "@this_move_direction: #{@this_move_direction}"
+		# puts "@this_move_distance: #{@this_move_distance}"
+
+		# puts "player: #{player}"
+		# piece_node = node_of(piece_name)
+
+		player = 1 if @turn % 2 != 0
+		player = 2 if @turn % 2 == 0
+
+
+		if @mistake == 0
+			return false
+		end
+		
+		if player == 1
+			king = "wk "
+			enemies = @black_list
+			friends = @white_list
+		else
+			king = "bk "
+			enemies = @white_list
+			friends = @black_list
+		end
+		found = false
+
+		if @done_moving == false
+			old_node = node_of(@this_move_piece_name)
+			old_node_piece = old_node.piece
+			move(@this_move_piece_name,@this_move_direction,@this_move_distance)
+			new_node = node_of(@this_move_piece_name)
+		end
+		# puts "current_node: #{current_node}"
+		# puts "current_node.coordinates: #{current_node.coordinates}"
+		# puts "current_node.up.nil?: #{current_node.up.nil?}"
+		# puts "!found: #{!found}"
+		# puts ""
+		# puts "entry: #{!current_node.up.nil? && !found}"
 
 
 
+		current_node = node_of(king)
+		# puts "king: #{king}"
+		# puts "node_of('wk ').coordinates: #{node_of("wk ").coordinates}"
+		# puts "node_of('bk ').coordinates: #{node_of("bk ").coordinates}"
+		# puts "current_node: #{current_node}"
+		while !current_node.up.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.up
+			if current_node.piece_name != "empty "
+				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+		end
+		current_node = node_of(king)
+		found = false
+		while !current_node.down.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.down
+			if current_node.piece_name != "empty "
+				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+		end
+		current_node = node_of(king)
+		found = false
+		while !current_node.left.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.left
+			if current_node.piece_name != "empty "
+				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+		end
+		current_node = node_of(king)
+		found = false
+		while !current_node.right.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.right
+			if current_node.piece_name != "empty "
+				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+		end
+
+		current_node = node_of(king)
+		found = false
+		spots = 1
+		while !current_node.up.nil? && !current_node.up.right.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			last_node = current_node
+			current_node = current_node.up.right
+			if current_node.piece_name != "empty "
+				if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				   (@pawn_list.include?(current_node.piece_name) && player == 1 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+			spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		spots = 1
+		while !current_node.up.nil? && !current_node.up.left.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.up.left
+			if current_node.piece_name != "empty "
+				if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+					(@pawn_list.include?(current_node.piece_name) && player == 1 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+			spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		spots = 1
+		while !current_node.down.nil? && !current_node.down.right.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.down.right
+			if current_node.piece_name != "empty "
+				if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+					(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+			spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		spots = 1
+		while !current_node.down.nil? && !current_node.down.left.nil? && !found
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.down.left
+			if current_node.piece_name != "empty "
+				if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+					(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				end
+				found = true
+			end
+			spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		# spots = 1
+		if !current_node.up.nil? && !current_node.up.up.nil? && !current_node.up.up.left.nil?
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.up.up.left
+			if @knight_list.include?(current_node.piece_name) && enemies.include?(current_node.piece_name)
+				# if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				# 	(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				# end
+				# found = true
+			end
+			# spots += 1
+		end
+
+
+
+
+
+		current_node = node_of(king)
+		found = false
+		# spots = 1
+		if !current_node.up.nil? && !current_node.up.up.nil? && !current_node.up.up.right.nil?
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.up.up.right
+			if @knight_list.include?(current_node.piece_name) && enemies.include?(current_node.piece_name)
+				# if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				# 	(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				# end
+				# found = true
+			end
+			# spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		# spots = 1
+		if !current_node.right.nil? && !current_node.right.right.nil? && !current_node.right.right.up.nil?
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.right.right.up
+			if @knight_list.include?(current_node.piece_name) && enemies.include?(current_node.piece_name)
+				# if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				# 	(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				# end
+				# found = true
+			end
+			# spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		# spots = 1
+		if !current_node.right.nil? && !current_node.right.right.nil? && !current_node.right.right.down.nil?
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.right.right.down
+			if @knight_list.include?(current_node.piece_name) && enemies.include?(current_node.piece_name)
+				# if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				# 	(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				# end
+				# found = true
+			end
+			# spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		# spots = 1
+		if !current_node.down.nil? && !current_node.down.down.nil? && !current_node.down.down.right.nil?
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.down.down.right
+			if @knight_list.include?(current_node.piece_name) && enemies.include?(current_node.piece_name)
+				# if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				# 	(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				# end
+				# found = true
+			end
+			# spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		# spots = 1
+		if !current_node.down.nil? && !current_node.down.down.nil? && !current_node.down.down.left.nil?
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.down.down.left
+			if @knight_list.include?(current_node.piece_name) && enemies.include?(current_node.piece_name)
+				# if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				# 	(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				# end
+				# found = true
+			end
+			# spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		# spots = 1
+		if !current_node.left.nil? && !current_node.left.left.nil? && !current_node.left.left.down.nil?
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.left.left.down
+			if @knight_list.include?(current_node.piece_name) && enemies.include?(current_node.piece_name)
+				# if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				# 	(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				# end
+				# found = true
+			end
+			# spots += 1
+		end
+
+		current_node = node_of(king)
+		found = false
+		# spots = 1
+		if !current_node.left.nil? && !current_node.left.left.nil? && !current_node.left.left.up.nil?
+			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
+			current_node = current_node.left.left.up
+			if @knight_list.include?(current_node.piece_name) && enemies.include?(current_node.piece_name)
+				# if (@bishop_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name) ||
+				# 	(@pawn_list.include?(current_node.piece_name) && player == 2 && enemies.include?(current_node.piece_name) && spots == 1)
+					if @done_moving == false
+						old_node.piece = old_node_piece
+						old_node.piece_name = @this_move_piece_name		
+						new_node.piece = @last_piece
+						new_node.piece_name = @last_piece_name
+					end
+					puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
+					return true
+				# end
+				# found = true
+			end
+			# spots += 1
+		end
+
+		
+
+
+		if @done_moving == false
+			old_node.piece = old_node_piece
+			old_node.piece_name = @this_move_piece_name		
+			new_node.piece = @last_piece
+			new_node.piece_name = @last_piece_name
+		end
+
+		puts "COOL, NOT IN CHECK!"
+		
+
+		return false
+	end
 
 
 
@@ -324,7 +976,7 @@ class Game
 		end
 		
 		@all_clear = all_clear?(piece_name,direction,distance)
-		puts "@all_clear: #{@all_clear}"
+		# puts "@all_clear: #{@all_clear}"
 		piece = node_of(piece_name)
 		
 
@@ -412,7 +1064,7 @@ class Game
 		elsif @king_list.include?(piece_name)
 			
 			if (direction == "u" || direction == "r" || direction == "d" || direction == "l" || direction == "ur" || direction == "dr" || direction == "dl" || direction == "ul") && @all_clear
-			   	return true
+				return true
 			else
 				puts "INVALID MOVE"
 				return false
@@ -422,107 +1074,6 @@ class Game
 		end
 	end
 
-	def check?(piece_name,direction,distance)
-		puts "checking..."
-		# puts "player: #{player}"
-		# piece_node = node_of(piece_name)
-		if piece_name == "nothing"
-			return false
-		end
-		
-		if @white_list.include?(piece_name)
-			# puts "player == 1"
-			king_node = node_of("wk ")
-			enemies = @black_list
-			friends = @white_list
-		else
-			king_node = node_of("bk ")
-			enemies = @white_list
-			friends = @black_list
-		end
-		current_node = king_node
-		old_node = node_of(piece_name)
-		old_node_piece = old_node.piece
-		puts "king_node.coordinates: #{king_node.coordinates}"
-		# puts "current_node.coordinates: #{current_node.coordinates}"
-		move(piece_name,direction,distance)
-		new_node = node_of(piece_name)
-
-		found = false
-		while !current_node.up.nil? && !found
-			puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
-			current_node = current_node.up
-			if current_node.piece_name != "empty "
-				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
-					old_node.piece = old_node_piece
-		old_node.piece_name = piece_name		
-		new_node.piece = @last_piece
-		new_node.piece_name = @last_piece_name
-		puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
-					return true
-				end
-				found = true
-			end
-		end
-		current_node = king_node
-		found = false
-		while !current_node.down.nil? && !found
-			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
-			current_node = current_node.down
-			if current_node.piece_name != "empty "
-				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
-					old_node.piece = old_node_piece
-		old_node.piece_name = piece_name		
-		new_node.piece = @last_piece
-		new_node.piece_name = @last_piece_name
-		puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
-					return true
-				end
-				found = true
-			end
-		end
-		current_node = king_node
-		found = false
-		while !current_node.left.nil? && !found
-			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
-			current_node = current_node.left
-			if current_node.piece_name != "empty "
-				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
-					old_node.piece = old_node_piece
-		old_node.piece_name = piece_name		
-		new_node.piece = @last_piece
-		new_node.piece_name = @last_piece_name
-		puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
-					return true
-				end
-				found = true
-			end
-		end
-		current_node = king_node
-		found = false
-		while !current_node.right.nil? && !found
-			# puts "in while loop... current_node.coordinates: #{current_node.coordinates}"
-			current_node = current_node.right
-			if current_node.piece_name != "empty "
-				if (@rook_list.include?(current_node.piece_name) || @queen_list.include?(current_node.piece_name)) && enemies.include?(current_node.piece_name)
-					old_node.piece = old_node_piece
-		old_node.piece_name = piece_name		
-		new_node.piece = @last_piece
-		new_node.piece_name = @last_piece_name
-		puts "INVALID MOVE, PUTS YOUR KING IN DANGER!"
-					return true
-				end
-				found = true
-			end
-		end
-
-		old_node.piece = old_node_piece
-		old_node.piece_name = piece_name		
-		new_node.piece = @last_piece
-		new_node.piece_name = @last_piece_name
-
-		return false
-	end
 
 
 	def all_clear?(piece_name,direction,distance)
