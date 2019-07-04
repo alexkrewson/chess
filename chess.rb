@@ -217,7 +217,7 @@ class Game
 
 		@this_move_piece_name = "nothing"
 		@this_move_direction = ""
-		@this_move_distance = 9000
+		@this_move_distance = 0
 		@white_mortalities = []
 		@black_mortalities = []
 		@killed_one = false
@@ -225,13 +225,14 @@ class Game
 		@last_piece_name = ""
 		@last_piece = ""
 		@done_moving = false
+		@spots_traveled = Hash.new
 	end
 
 	def play
 		while @turn < 50 # !@finished
 
 			if @turn == 1
-				File.open("chess_save_bishop.txt", "r") do |file|
+				File.open("chess_save_knight.txt", "r") do |file|
 					file.readlines.each_with_index do |line, idx|
 					@piece_info[idx] = line.chomp.split(',')
 					end   
@@ -287,6 +288,7 @@ class Game
 		player = 2 if @turn % 2 == 0
 		@mistake = 0
 		@done_moving = false
+		@spots_traveled[@this_move_piece_name] ||= 0
 		
 		while @mistake == 0 || !valid_move?(@this_move_piece_name,@this_move_direction,@this_move_distance,player) || check?
 			puts ""
@@ -302,6 +304,7 @@ class Game
 			puts ""
 			@this_move_distance = gets.chomp.to_i
 			@mistake += 1
+			@spots_traveled[@this_move_piece_name] ||= 0
 			# puts "@this_move_piece_name: #{@this_move_piece_name}"
 			# puts "@this_move_direction: #{@this_move_direction}"
 			# puts "@this_move_distance: #{@this_move_distance}"
@@ -309,6 +312,8 @@ class Game
 		# puts "check: #{check?(@this_move_piece_name,@this_move_direction,@this_move_distance)}"
 		move(@this_move_piece_name,@this_move_direction,@this_move_distance)
 		@done_moving = true
+		@spots_traveled[@this_move_piece_name] += @this_move_distance
+		puts "@spots_traveled[@this_move_piece_name]: #{@spots_traveled[@this_move_piece_name]}"
 	end
 	
 	def checkmate?
@@ -319,7 +324,7 @@ class Game
 		original_item_piece_name = ""
 		original_item_piece = ""
 		killed = false
-
+		
 		if player == 1
 			king = "wk "
 			enemies = @black_list
@@ -339,29 +344,528 @@ class Game
 			@board.each do |item|
 				if (player == 1 && @white_list.include?(item.piece_name)) || (player == 2 && @black_list.include?(item.piece_name))
 					current_node = item
+					@spots_traveled[item.piece_name] ||= 0
 					original_item_piece_name = item.piece_name
 					original_item_piece = item.piece
 					# move that piece in all possible ways
+
+					if @pawn_list.include?(item.piece_name) && @white_list.include?(item.piece_name)
+						
+						if !current_node.up.nil? && current_node.up.piece_name == "empty "
+							old_node = current_node
+							current_node = current_node.up # move up one
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							# if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
+							# 	killed = true
+							# end
+							old_piece_name = current_node.piece_name # save the old piece_name
+							old_piece = current_node.piece # save the old piece
+							current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+							if !check? # if this piece being here creates or fails to block a check
+								current_node.piece_name = old_piece_name # reset the current node's piece name
+								current_node.piece = old_piece # recet the current node's piece
+								item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+								item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
+								return false
+							end
+							item.piece_name = original_item_piece_name
+							item.piece = original_item_piece
+							current_node.piece_name = old_piece_name
+							current_node.piece = old_piece
+						end
+						current_node = item
+						i = 0
+						puts "@spots_traveled[item.piece_name]: #{@spots_traveled[item.piece_name]}"
+						if @spots_traveled[item.piece_name] == 0
+							while i < 2
+								
+								if !current_node.up.nil? && current_node.up.piece_name == "empty "
+									puts "in while checkmate pawn loop... current_node.piece_name: #{current_node.piece_name}"
+									puts "in while checkmate pawn loop... current_node.coordinates: #{current_node.coordinates}"
+									old_node = current_node
+									current_node = current_node.up # move up one
+									old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+									old_node.piece = " " # resets previous node's piece to " "
+									# if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
+									# 	killed = true
+									# end
+									old_piece_name = current_node.piece_name # save the old piece_name
+									old_piece = current_node.piece # save the old piece
+									current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+									if !check? # if this piece being here creates or fails to block a check
+										current_node.piece_name = old_piece_name # reset the current node's piece name
+										current_node.piece = old_piece # recet the current node's piece
+										item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+										item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
+										return false
+									end
+									item.piece_name = original_item_piece_name
+									item.piece = original_item_piece
+									current_node.piece_name = old_piece_name
+									current_node.piece = old_piece
+								end
+								i += 1
+							end
+							current_node = item
+						end # if !current_node.up.nil? && current_node.up.piece_name == "empty "
+
+						if !current_node.up.nil? && !current_node.up.left.nil? && enemies.include?(current_node.up.left.piece_name)
+							old_node = current_node
+							puts "in while checkmate pawn up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.up.left
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end
+
+						if !current_node.up.nil? && !current_node.up.right.nil? && enemies.include?(current_node.up.right.piece_name)
+							old_node = current_node
+							puts "in while checkmate pawn up right loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.up.right
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end
+						
+					end # if white pawn
+
+					if @pawn_list.include?(item.piece_name) && @black_list.include?(item.piece_name)
+						
+						if !current_node.down.nil? && current_node.down.piece_name == "empty "
+							old_node = current_node
+							current_node = current_node.down # move down one
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							# if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
+							# 	killed = true
+							# end
+							old_piece_name = current_node.piece_name # save the old piece_name
+							old_piece = current_node.piece # save the old piece
+							current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+							if !check? # if this piece being here creates or fails to block a check
+								current_node.piece_name = old_piece_name # reset the current node's piece name
+								current_node.piece = old_piece # recet the current node's piece
+								item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+								item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
+								return false
+							end
+							item.piece_name = original_item_piece_name
+							item.piece = original_item_piece
+							current_node.piece_name = old_piece_name
+							current_node.piece = old_piece
+						end
+						current_node = item
+						i = 0
+						puts "@spots_traveled[item.piece_name]: #{@spots_traveled[item.piece_name]}"
+						if @spots_traveled[item.piece_name] == 0
+							while i < 2
+								
+								if !current_node.down.nil? && current_node.down.piece_name == "empty "
+									puts "in while checkmate pawn loop... current_node.piece_name: #{current_node.piece_name}"
+									puts "in while checkmate pawn loop... current_node.coordinates: #{current_node.coordinates}"
+									old_node = current_node
+									current_node = current_node.down # move down one
+									old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+									old_node.piece = " " # resets previous node's piece to " "
+									# if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
+									# 	killed = true
+									# end
+									old_piece_name = current_node.piece_name # save the old piece_name
+									old_piece = current_node.piece # save the old piece
+									current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+									if !check? # if this piece being here creates or fails to block a check
+										current_node.piece_name = old_piece_name # reset the current node's piece name
+										current_node.piece = old_piece # recet the current node's piece
+										item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+										item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
+										return false
+									end
+									item.piece_name = original_item_piece_name
+									item.piece = original_item_piece
+									current_node.piece_name = old_piece_name
+									current_node.piece = old_piece
+								end
+								i += 1
+							end
+							current_node = item
+						end # if !current_node.down.nil? && current_node.down.piece_name == "empty "
+
+						if !current_node.down.nil? && !current_node.down.left.nil? && enemies.include?(current_node.down.left.piece_name)
+							old_node = current_node
+							puts "in while checkmate pawn down left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.down.left
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end				
+						current_node = item
+
+
+						if !current_node.down.nil? && !current_node.down.right.nil? && enemies.include?(current_node.down.right.piece_name)
+							old_node = current_node
+							puts "in while checkmate pawn down right loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.down.right
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end
+						current_node = item
+
+					end # if black pawn
+
+
+					if @knight_list.include?(item.piece_name)
+						if !current_node.up.nil? && !current_node.up.up.nil? && !current_node.up.up.left.nil? && enemies.include?(current_node.up.up.left.piece_name)
+							old_node = current_node
+							puts "in while checkmate knight up up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.up.up.left
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end 
+						current_node = item
+						if !current_node.up.nil? && !current_node.up.up.nil? && !current_node.up.up.right.nil? && enemies.include?(current_node.up.up.right.piece_name)
+							old_node = current_node
+							puts "in while checkmate knight up up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.up.up.right
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end 
+						current_node = item
+						if !current_node.left.nil? && !current_node.left.left.nil? && !current_node.left.left.up.nil? && enemies.include?(current_node.left.left.up.piece_name)
+							old_node = current_node
+							puts "in while checkmate knight up up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.left.left.up
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end 
+						current_node = item
+						if !current_node.left.nil? && !current_node.left.left.nil? && !current_node.left.left.down.nil? && enemies.include?(current_node.left.left.down.piece_name)
+							old_node = current_node
+							puts "in while checkmate knight up up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.left.left.down
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end 
+						current_node = item
+						if !current_node.down.nil? && !current_node.down.down.nil? && !current_node.down.down.left.nil? && enemies.include?(current_node.down.down.left.piece_name)
+							old_node = current_node
+							puts "in while checkmate knight up up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.down.down.left
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end 
+						current_node = item
+						if !current_node.down.nil? && !current_node.down.down.nil? && !current_node.down.down.right.nil? && enemies.include?(current_node.down.down.right.piece_name)
+							old_node = current_node
+							puts "in while checkmate knight up up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.down.down.right
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end 
+
+						current_node = item
+						if !current_node.right.nil? && !current_node.right.right.nil? && !current_node.right.right.down.nil? && enemies.include?(current_node.right.right.down.piece_name)
+							old_node = current_node
+							puts "in while checkmate knight up up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.right.right.down
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end 
+
+						current_node = item
+						if !current_node.right.nil? && !current_node.right.right.nil? && !current_node.right.right.up.nil? && enemies.include?(current_node.right.right.up.piece_name)
+							old_node = current_node
+							puts "in while checkmate knight up up left loop... item.coordinates: #{current_node.coordinates}"
+							current_node = current_node.right.right.up
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty "
+								killed = true
+							end
+							old_piece_name = current_node.piece_name
+							old_piece = current_node.piece
+							current_node.piece_name = original_item_piece_name
+							if !check?
+								current_node.piece_name = old_piece_name
+								current_node.piece = old_piece
+								item.piece_name = original_item_piece_name
+								item.piece = original_item_piece
+								return false
+							end
+						end 
+
+						
+
+					end# end if knight
+
+					if @king_list.include?(item.piece_name)
+
+						if !current_node.up.nil? && current_node.up.piece_name == "empty "
+							old_node = current_node
+							current_node = current_node.up # move down one
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							# if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
+							# 	killed = true
+							# end
+							old_piece_name = current_node.piece_name # save the old piece_name
+							old_piece = current_node.piece # save the old piece
+							current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+							if !check? # if this piece being here creates or fails to block a check
+								current_node.piece_name = old_piece_name # reset the current node's piece name
+								current_node.piece = old_piece # recet the current node's piece
+								item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+								item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
+								return false
+							end
+							item.piece_name = original_item_piece_name
+							item.piece = original_item_piece
+							current_node.piece_name = old_piece_name
+							current_node.piece = old_piece
+						end
+						current_node = item
+
+						if !current_node.down.nil? && current_node.down.piece_name == "empty "
+							old_node = current_node
+							current_node = current_node.down # move down one
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							# if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
+							# 	killed = true
+							# end
+							old_piece_name = current_node.piece_name # save the old piece_name
+							old_piece = current_node.piece # save the old piece
+							current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+							if !check? # if this piece being here creates or fails to block a check
+								current_node.piece_name = old_piece_name # reset the current node's piece name
+								current_node.piece = old_piece # recet the current node's piece
+								item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+								item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
+								return false
+							end
+							item.piece_name = original_item_piece_name
+							item.piece = original_item_piece
+							current_node.piece_name = old_piece_name
+							current_node.piece = old_piece
+						end
+						current_node = item
+
+						if !current_node.left.nil? && current_node.left.piece_name == "empty "
+							old_node = current_node
+							current_node = current_node.left # move left one
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							# if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
+							# 	killed = true
+							# end
+							old_piece_name = current_node.piece_name # save the old piece_name
+							old_piece = current_node.piece # save the old piece
+							current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+							if !check? # if this piece being here creates or fails to block a check
+								current_node.piece_name = old_piece_name # reset the current node's piece name
+								current_node.piece = old_piece # recet the current node's piece
+								item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+								item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
+								return false
+							end
+							item.piece_name = original_item_piece_name
+							item.piece = original_item_piece
+							current_node.piece_name = old_piece_name
+							current_node.piece = old_piece
+						end
+						current_node = item
+
+						if !current_node.right.nil? && current_node.right.piece_name == "empty "
+							old_node = current_node
+							current_node = current_node.right # move down one
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							# if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
+							# 	killed = true
+							# end
+							old_piece_name = current_node.piece_name # save the old piece_name
+							old_piece = current_node.piece # save the old piece
+							current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+							if !check? # if this piece being here creates or fails to block a check
+								current_node.piece_name = old_piece_name # reset the current node's piece name
+								current_node.piece = old_piece # recet the current node's piece
+								item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+								item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
+								return false
+							end
+							item.piece_name = original_item_piece_name
+							item.piece = original_item_piece
+							current_node.piece_name = old_piece_name
+							current_node.piece = old_piece
+						end
+						current_node = item
+
+					end
+
 
 					if @rook_list.include?(item.piece_name) || @queen_list.include?(item.piece_name)
 						puts "in while checkmate rook loop... item.piece_name: #{item.piece_name}"
 						puts "in while checkmate rook loop... item.coordinates: #{item.coordinates}"
 						current_node.piece_name = "empty "
 						current_node.piece = " "
+						killed = false
 						while !current_node.up.nil? && (current_node.up.piece_name == "empty " || enemies.include?(current_node.up.piece_name)) && killed == false
 							puts "in while checkmate rook up loop... item.coordinates: #{current_node.coordinates}"
-							current_node = current_node.up
-							if current_node.piece_name != "empty "
+							old_node = current_node
+							current_node = current_node.up # move up one
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
+							if current_node.piece_name != "empty " # if there is an enemy piece at this spot, set killed flag to true
 								killed = true
 							end
-							old_piece_name = current_node.piece_name
-							old_piece = current_node.piece
-							current_node.piece_name = original_item_piece_name
-							if !check?
-								current_node.piece_name = old_piece_name
-								current_node.piece = old_piece
-								item.piece_name = original_item_piece_name
-								item.piece = original_item_piece
+							old_piece_name = current_node.piece_name # save the old piece_name
+							old_piece = current_node.piece # save the old piece
+							current_node.piece_name = original_item_piece_name # set the current node piece_name tentatively to the piece in question
+							if !check? # if this piece being here creates or fails to block a check
+								current_node.piece_name = old_piece_name # reset the current node's piece name
+								current_node.piece = old_piece # recet the current node's piece
+								item.piece_name = original_item_piece_name # reset the original item's piece_name (was set to "empty " above)
+								item.piece = original_item_piece # reset the original item's piece_name (was set to " " above)
 								return false
 							end
 						end
@@ -370,12 +874,15 @@ class Game
 						current_node.piece_name = old_piece_name
 						current_node.piece = old_piece
 						current_node = item
-
+						killed = false
 						while !current_node.down.nil? && (current_node.down.piece_name == "empty " || enemies.include?(current_node.down.piece_name)) && killed == false
 							puts "in while checkmate rook down loop... item.coordinates: #{current_node.coordinates}"
 							# current_node.piece_name = "empty "
 							# current_node.piece = " "
+							old_node = current_node
 							current_node = current_node.down
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
 							if current_node.piece_name != "empty "
 								killed = true
 							end
@@ -394,13 +901,16 @@ class Game
 						current_node.piece = old_piece
 						item.piece_name = original_item_piece_name
 						item.piece = original_item_piece
-
+						killed = false
 						current_node = item
 						while !current_node.left.nil? && (current_node.left.piece_name == "empty " || enemies.include?(current_node.left.piece_name)) && killed == false
 							puts "in while checkmate rook left loop... item.coordinates: #{current_node.coordinates}"
 							# current_node.piece_name = "empty "
 							# current_node.piece = " "
+							old_node = current_node
 							current_node = current_node.left
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
 							if current_node.piece_name != "empty "
 								killed = true
 							end
@@ -419,13 +929,16 @@ class Game
 						current_node.piece = old_piece
 						item.piece_name = original_item_piece_name
 						item.piece = original_item_piece
-
+						killed = false
 						current_node = item
 						while !current_node.right.nil? && (current_node.right.piece_name == "empty " || enemies.include?(current_node.right.piece_name)) && killed == false
 							puts "in while checkmate rook right loop... item.coordinates: #{current_node.coordinates}"
 							# current_node.piece_name = "empty "
 							# current_node.piece = " "
+							old_node = current_node
 							current_node = current_node.right
+							old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+							old_node.piece = " " # resets previous node's piece to " "
 							if current_node.piece_name != "empty "
 								killed = true
 							end
@@ -450,32 +963,48 @@ class Game
 					end # if rook or queen
 
 					# if @bishop_list.include?(item.piece_name) || @queen_list.include?(item.piece_name)
-
-					# 	puts "in while checkmate bishop loop... item.piece_name: #{item.piece_name}"
-					# 	puts "in while checkmate bishop loop... item.coordinates: #{item.coordinates}"
-					# 	current_node = item
-					# 	while !current_node.up.right.nil? && all_clear?(current_node.piece_name,"ur",1)
-					# 		puts "in while checkmate loop... item.coordinates: #{item.coordinates}"
-					# 		current_node = current_node.up.right
-					# 		old_piece_name = current_node.piece_name
-					# 		old_piece = current_node.piece
-					# 		current_node.piece_name = original_item_piece_name
-					# 		if !check?
-					# 			current_node.piece_name = old_piece_name
-					# 			current_node.piece = old_piece
-					# 			item.piece_name = original_item_piece_name
-					# 			item.piece = original_item_piece
-					# 			return false
-					# 		end
-					# 		current_node.piece_name = old_piece_name
-					# 		current_node.piece = old_piece
-					# 		item.piece_name = original_item_piece_name
-					# 		item.piece = original_item_piece
-					# 	end
-					# 	current_node = item
-					# 	while !current_node.up.left.nil? && all_clear?(current_node.piece_name,"ul",1)
-					# 		puts "in while checkmate loop... item.coordinates: #{item.coordinates}"
+					# 	puts "in while checkmate rook loop... item.piece_name: #{item.piece_name}"
+					# 	puts "in while checkmate rook loop... item.coordinates: #{item.coordinates}"
+					# 	current_node.piece_name = "empty "
+					# 	current_node.piece = " "
+					# 	killed = false
+					# 	while !current_node.up.nil? && !current_node.up.left.nil? && (current_node.up.left.piece_name == "empty " || enemies.include?(current_node.up.left.piece_name)) && killed == false
+					# 		old_node = current_node
 					# 		current_node = current_node.up.left
+					# 		old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+					# 		old_node.piece = " " # resets previous node's piece to " "
+					# 		if current_node.piece_name != "empty "
+					# 			killed = true
+					# 		end
+					# 		old_piece_name = current_node.piece_name
+					# 		old_piece = current_node.piece
+					# 		current_node.piece_name = original_item_piece_name
+					# 		puts "in while checkmate bishop up left loop... item.coordinates: #{current_node.coordinates}"
+					# 		if !check?
+					# 			current_node.piece_name = old_piece_name
+					# 			current_node.piece = old_piece
+					# 			item.piece_name = original_item_piece_name
+					# 			item.piece = original_item_piece
+					# 			return false
+					# 		end
+					# 	end
+					# 	item.piece_name = original_item_piece_name
+					# 	item.piece = original_item_piece
+					# 	current_node.piece_name = old_piece_name
+					# 	current_node.piece = old_piece
+					# 	current_node = item
+					# 	killed = false
+					# 	while !current_node.up.nil? && !current_node.up.right.nil? && (current_node.up.right.piece_name == "empty " || enemies.include?(current_node.up.right.piece_name)) && killed == false
+					# 		# current_node.piece_name = "empty "
+					# 		# current_node.piece = " "
+					# 		old_node = current_node
+					# 		current_node = current_node.up.right
+					# 		old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+					# 		old_node.piece = " " # resets previous node's piece to " "
+					# 		puts "in while checkmate bishop up right loop... item.coordinates: #{current_node.coordinates}"
+					# 		if current_node.piece_name != "empty "
+					# 			killed = true
+					# 		end
 					# 		old_piece_name = current_node.piece_name
 					# 		old_piece = current_node.piece
 					# 		current_node.piece_name = original_item_piece_name
@@ -486,37 +1015,27 @@ class Game
 					# 			item.piece = original_item_piece
 					# 			return false
 					# 		end
-					# 		current_node.piece_name = old_piece_name
-					# 		current_node.piece = old_piece
-					# 		item.piece_name = original_item_piece_name
-					# 		item.piece = original_item_piece
 					# 	end
+					# 	current_node.piece_name = old_piece_name
+					# 	current_node.piece = old_piece
+					# 	item.piece_name = original_item_piece_name
+					# 	item.piece = original_item_piece
+					# 	killed = false
 					# 	current_node = item
-					# 	while !current_node.down.right.nil? && all_clear?(current_node.piece_name,"dr",1)
-					# 		puts "in while checkmate loop... item.coordinates: #{item.coordinates}"
-					# 		current_node = current_node.down.right
-					# 		old_piece_name = current_node.piece_name
-					# 		old_piece = current_node.piece
-					# 		current_node.piece_name = original_item_piece_name
-					# 		if !check?
-					# 			current_node.piece_name = old_piece_name
-					# 			current_node.piece = old_piece
-					# 			item.piece_name = original_item_piece_name
-					# 			item.piece = original_item_piece
-					# 			return false
-					# 		end
-					# 		current_node.piece_name = old_piece_name
-					# 		current_node.piece = old_piece
-					# 		item.piece_name = original_item_piece_name
-					# 		item.piece = original_item_piece
-					# 	end
-					# 	current_node = item
-					# 	while !current_node.down.left.nil? && all_clear?(current_node.piece_name,"dl",1)
-					# 		puts "in while checkmate loop... item.coordinates: #{item.coordinates}"
+					# 	while !current_node.down.nil? && !current_node.down.left.nil? && (current_node.down.left.piece_name == "empty " || enemies.include?(current_node.down.left.piece_name)) && killed == false
+					# 		# current_node.piece_name = "empty "
+					# 		# current_node.piece = " "
+					# 		old_node = current_node
 					# 		current_node = current_node.down.left
+					# 		old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+					# 		old_node.piece = " " # resets previous node's piece to " "
+					# 		if current_node.piece_name != "empty "
+					# 			killed = true
+					# 		end
 					# 		old_piece_name = current_node.piece_name
 					# 		old_piece = current_node.piece
 					# 		current_node.piece_name = original_item_piece_name
+					# 		puts "in while checkmate bishop down left loop... item.coordinates: #{current_node.coordinates}"
 					# 		if !check?
 					# 			current_node.piece_name = old_piece_name
 					# 			current_node.piece = old_piece
@@ -524,13 +1043,43 @@ class Game
 					# 			item.piece = original_item_piece
 					# 			return false
 					# 		end
-					# 		current_node.piece_name = old_piece_name
-					# 		current_node.piece = old_piece
-					# 		item.piece_name = original_item_piece_name
-					# 		item.piece = original_item_piece
 					# 	end
+					# 	current_node.piece_name = old_piece_name
+					# 	current_node.piece = old_piece
+					# 	item.piece_name = original_item_piece_name
+					# 	item.piece = original_item_piece
+					# 	killed = false
+					# 	current_node = item
+					# 	puts "entry: #{!current_node.down.nil? && !current_node.down.right.nil? && (current_node.down.right.piece_name == "empty " || enemies.include?(current_node.down.right.piece_name)) && killed == false}"
+					# 	while !current_node.down.nil? && !current_node.down.right.nil? && (current_node.down.right.piece_name == "empty " || enemies.include?(current_node.down.right.piece_name)) && killed == false
+					# 		# current_node.piece_name = "empty "
+					# 		# current_node.piece = " "
+					# 		old_node = current_node
+					# 		current_node = current_node.down.right
+					# 		old_node.piece_name = "empty " # resets previous node's piece_name to "empty "
+					# 		old_node.piece = " " # resets previous node's piece to " "
+					# 		if current_node.piece_name != "empty "
+					# 			killed = true
+					# 		end
+					# 		old_piece_name = current_node.piece_name
+					# 		old_piece = current_node.piece
+					# 		current_node.piece_name = original_item_piece_name
+					# 		puts "in while checkmate bishop down right loop... item.coordinates: #{current_node.coordinates}"
+					# 		if !check?
+					# 			current_node.piece_name = old_piece_name
+					# 			current_node.piece = old_piece
+					# 			item.piece_name = original_item_piece_name
+					# 			item.piece = original_item_piece
+					# 			return false
+					# 		end
+					# 	end
+					# 	current_node.piece_name = old_piece_name
+					# 	current_node.piece = old_piece
+					# 	item.piece_name = original_item_piece_name
+					# 	item.piece = original_item_piece
 
-					
+						
+
 					# end # if bishop or queen
 
 
@@ -976,13 +1525,14 @@ class Game
 		end
 		
 		@all_clear = all_clear?(piece_name,direction,distance)
-		# puts "@all_clear: #{@all_clear}"
+		puts "@all_clear: #{@all_clear}"
 		piece = node_of(piece_name)
 		
-
+puts "entry: #{(@spots_traveled[piece_name])}"
 		if @pawn_list.include?(piece_name)
 			if @white_list.include?(piece_name)
-				if (direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9 && @all_clear) || 
+				if (direction == "u" && (node_of(piece_name).coordinates[0] + distance) < 9 && @all_clear && distance < 2) ||
+				   (direction == "u" && @spots_traveled[piece_name] == 0 && distance < 3 && @all_clear) ||
 				   (direction == "ul" && !piece.up.left.nil? && @black_list.include?(piece.up.left.piece_name) && distance == 1) ||
 				   (direction == "ur" && !piece.up.right.nil? && @black_list.include?(piece.up.right.piece_name) && distance == 1)
 					return true
@@ -991,7 +1541,8 @@ class Game
 					return false
 				end
 			elsif @black_list.include?(piece_name)
-				if (direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0 && @all_clear) ||
+				if (direction == "d" && (node_of(piece_name).coordinates[0] - distance) > 0 && @all_clear && distance < 2) ||
+				   (direction == "d" && @spots_traveled[piece_name] == 0 && distance < 3 && @all_clear) ||
 				   (direction == "dl" && !piece.down.left.nil? && @white_list.include?(piece.down.left.piece_name) && distance == 1) ||
 				   (direction == "dr" && !piece.down.right.nil? && @white_list.include?(piece.down.right.piece_name) && distance == 1)
 					return true
@@ -1440,6 +1991,7 @@ class Game
 	end # move(piece,destination)
 
 	def move_up(piece_name,distance)
+		
 		current_node = node_of(piece_name)
 		spots = 0
 		while spots < distance
@@ -1454,6 +2006,7 @@ class Game
 			if @black_list.include?(current_node.up.piece_name)
 				@black_mortalities.push("#{current_node.up.piece}#{current_node.up.piece_name[-1]}")
 			end
+			@last = current_node
 			@last_piece_name = current_node.up.piece_name
 			@last_piece = current_node.up.piece
 			current_node.up.piece_name = piece_name
@@ -1462,7 +2015,11 @@ class Game
 			current_node.piece = " "
 			current_node = current_node.up
 			spots += 1
+			# if @done_moving == false
+			# end
+			puts "spots: #{spots}"
 		end # while current_node.coordinates != destination
+		
 	end # def move_up(piece_name,distance)
 
 	def move_right(piece_name,distance)
@@ -1480,6 +2037,7 @@ class Game
 			if @black_list.include?(current_node.right.piece_name)
 				@black_mortalities.push("#{current_node.right.piece}#{current_node.right.piece_name[-1]}")
 			end
+			@last = current_node
 			@last_piece_name = current_node.right.piece_name
 			@last_piece = current_node.right.piece
 			current_node.right.piece_name = piece_name
@@ -1495,7 +2053,7 @@ class Game
 		current_node = node_of(piece_name)
 		spots = 0
 		while spots < distance
-			# puts "current_node.coordinates: #{current_node.coordinates}"
+			puts "in move_down... current_node.coordinates: #{current_node.coordinates}"
 			# puts "current_node.piece_name: #{current_node.piece_name}"
 			# puts "current_node.piece: #{current_node.piece}"
 			# puts "current_node: #{current_node}"
@@ -1506,6 +2064,7 @@ class Game
 			if @black_list.include?(current_node.down.piece_name)
 				@black_mortalities.push("#{current_node.down.piece}#{current_node.down.piece_name[-1]}")
 			end
+			@last = current_node
 			@last_piece_name = current_node.down.piece_name
 			@last_piece = current_node.down.piece
 			current_node.down.piece_name = piece_name
@@ -1532,6 +2091,7 @@ class Game
 			if @black_list.include?(current_node.left.piece_name)
 				@black_mortalities.push("#{current_node.left.piece}#{current_node.left.piece_name[-1]}")
 			end
+			@last = current_node
 			@last_piece_name = current_node.left.piece_name
 			@last_piece = current_node.left.piece
 			current_node.left.piece_name = piece_name
@@ -1558,6 +2118,7 @@ class Game
 			if @black_list.include?(current_node.up.left.piece_name)
 				@black_mortalities.push("#{current_node.up.left.piece}#{current_node.up.left.piece_name[-1]}")
 			end
+			@last = current_node
 			@last_piece_name = current_node.up.left.piece_name
 			@last_piece = current_node.up.left.piece
 			current_node.up.left.piece_name = piece_name
@@ -1584,6 +2145,7 @@ class Game
 			if @black_list.include?(current_node.up.right.piece_name)
 				@black_mortalities.push("#{current_node.up.right.piece}#{current_node.up.right.piece_name[-1]}")
 			end
+			@last = current_node
 			@last_piece_name = current_node.up.right.piece_name
 			@last_piece = current_node.up.right.piece
 			current_node.up.right.piece_name = piece_name
@@ -1610,6 +2172,7 @@ class Game
 			if @black_list.include?(current_node.down.left.piece_name)
 				@black_mortalities.push("#{current_node.down.left.piece}#{current_node.down.left.piece_name[-1]}")
 			end
+			@last = current_node
 			@last_piece_name = current_node.down.left.piece_name
 			@last_piece = current_node.down.left.piece
 			current_node.down.left.piece_name = piece_name
@@ -1637,6 +2200,7 @@ class Game
 			if @black_list.include?(current_node.down.right.piece_name)
 				@black_mortalities.push("#{current_node.down.right.piece}#{current_node.down.right.piece_name[-1]}")
 			end
+			@last = current_node
 			@last_piece_name = current_node.down.right.piece_name
 			@last_piece = current_node.down.right.piece
 			current_node.down.right.piece_name = piece_name
